@@ -21,6 +21,9 @@ model User {
   applications Application[]
   company      Company?       @relation(fields: [companyId], references: [id])
   companyId    String?
+  profile      Profile?
+  savedJobs    SavedJob[]
+  jobAlerts    JobAlert[]
 }
 
 model Company {
@@ -46,6 +49,8 @@ model Job {
   company     Company       @relation(fields: [companyId], references: [id])
   companyId   String
   applications Application[]
+  views       JobView[]
+  savedBy     SavedJob[]
 }
 
 model Application {
@@ -59,6 +64,45 @@ model Application {
   userId    String
   job       Job      @relation(fields: [jobId], references: [id])
   jobId     String
+}
+
+model Profile {
+  id          String  @id @default(cuid())
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String  @unique
+  headline    String?
+  location    String?
+  experience  String?
+  education   String?
+  skills      String?
+  avatarUrl   String?
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  job       Job      @relation(fields: [jobId], references: [id])
+  jobId     String
+  createdAt DateTime @default(now())
+  @@unique([userId, jobId])
+}
+
+model JobAlert {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  keywords  String?
+  location  String?
+  type      JobType?
+  createdAt DateTime @default(now())
+}
+
+model JobView {
+  id        String   @id @default(cuid())
+  job       Job      @relation(fields: [jobId], references: [id])
+  jobId     String
+  viewedAt  DateTime @default(now())
 }
 
 enum UserRole {
