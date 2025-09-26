@@ -9,5 +9,9 @@ export class ApplicationsService {
   async create(userId: string, input: CreateApplicationDto) {
     return prisma.application.create({ data: { userId, jobId: input.jobId, cvUrl: input.cvUrl ?? null, coverLetter: input.coverLetter ?? null } });
   }
+
+  async updateStatus(id: string, status: 'PENDING' | 'REVIEWING' | 'INTERVIEW' | 'OFFER' | 'REJECTED') {
+    return prisma.application.update({ where: { id }, data: { status } });
+  }
 }
 

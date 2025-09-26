@@ -17,3 +17,8 @@ export const ApplicationResponse = z.object({
 });
 export type ApplicationResponse = z.infer<typeof ApplicationResponse>;
 
+export const UpdateApplicationStatusDto = z.object({
+  status: z.enum(['PENDING', 'REVIEWING', 'INTERVIEW', 'OFFER', 'REJECTED']),
+});
+export type UpdateApplicationStatusDto = z.infer<typeof UpdateApplicationStatusDto>;
+
