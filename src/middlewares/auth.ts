@@ -29,3 +29,6 @@ export function requireRoles(...roles: UserRole[]) {
   };
 }
 
+// Alias for requireAuth
+export const authMiddleware = requireAuth;
+

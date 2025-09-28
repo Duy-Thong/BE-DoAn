@@ -14,6 +14,13 @@ import { savedJobsRouter } from '../modules/saved-jobs/routes.js';
 import { jobAlertsRouter } from '../modules/job-alerts/routes.js';
 import { searchRouter } from '../modules/search/routes.js';
 import { uploadsRouter } from '../modules/uploads/routes.js';
+// New modules
+import cvsRouter from '../modules/cvs/routes.js';
+import companyMembersRouter from '../modules/company-members/routes.js';
+import applicationManagementRouter from '../modules/application-management/routes.js';
+import jobRecommendationsRouter from '../modules/job-recommendations/routes.js';
+import adminRouter from '../modules/admin/routes.js';
+import companyInfoRouter from '../modules/company-info/routes.js';
 
 export function createExpressApp() {
   const app = express();
@@ -37,6 +44,15 @@ export function createExpressApp() {
   app.use('/api/job-alerts', jobAlertsRouter);
   app.use('/api/search', searchRouter);
   app.use('/api/uploads', uploadsRouter);
+  
+  // New modules
+  app.use('/api/cvs', cvsRouter);
+  app.use('/api/company-members', companyMembersRouter);
+  app.use('/api/application-management', applicationManagementRouter);
+  app.use('/api/job-recommendations', jobRecommendationsRouter);
+  app.use('/api/admin', adminRouter);
+  app.use('/api/company-info', companyInfoRouter);
+  
   // serve static uploads
   app.use('/uploads', express.static('uploads'));
 

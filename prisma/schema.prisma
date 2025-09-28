@@ -11,59 +11,144 @@ datasource db {
 
 // Basic models for recruiting system
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  fullName     String
-  role         UserRole       @default(CANDIDATE)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  applications Application[]
-  company      Company?       @relation(fields: [companyId], references: [id])
-  companyId    String?
-  profile      Profile?
-  savedJobs    SavedJob[]
-  jobAlerts    JobAlert[]
+  id              String         @id @default(cuid())
+  email           String         @unique
+  passwordHash    String
+  fullName        String
+  phoneNumber     String?
+  dateOfBirth     DateTime?
+  gender          Gender?
+  nationality     String?
+  role            UserRole       @default(CANDIDATE)
+  isActive        Boolean        @default(true)
+  isLocked        Boolean        @default(false)
+  isEmailVerified Boolean        @default(false)
+  lastLoginAt     DateTime?
+  avatarUrl       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  applications    Application[]
+  company         Company?       @relation(fields: [companyId], references: [id])
+  companyId       String?
+  profile         Profile?
+  savedJobs       SavedJob[]
+  jobAlerts       JobAlert[]
+  cvs             CV[]
+  companyMembers  CompanyMember[]
+  internalNotes   InternalNote[] @relation("NoteAuthor")
+  internalNotesForUser InternalNote[] @relation("NoteUser")
+  jobRecommendations JobRecommendation[]
+  notifications   Notification[]
+  companyReviews  CompanyReview[]
+  userSkills      UserSkill[]
+  interviews      Interview[]
+  auditLogs       AuditLog[]
 }
 
 model Company {
+  id              String   @id @default(cuid())
+  name            String
+  website         String?
+  description     String?
+  industry        String?
+  companySize     CompanySize?
+  foundedYear     Int?
+  taxCode         String?
+  address         String?
+  phone           String?
+  email           String?
+  logoUrl         String?
+  isVerified      Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  isEmailVerified Boolean  @default(false)
+  socialMedia     Json?    // {linkedin, facebook, twitter, etc.}
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  jobs            Job[]
+  users           User[]
+  members         CompanyMember[]
+  reviews         CompanyReview[]
+  jobSkills       JobSkill[]
+}
+
+model CompanyMember {
+  id        String        @id @default(cuid())
+  role      CompanyRole   @default(VIEWER)
+  joinedAt  DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+  userId    String
+  company   Company       @relation(fields: [companyId], references: [id])
+  companyId String
+  invitedBy String?       // User ID who invited this member
+  @@unique([userId, companyId])
+}
+
+model CV {
   id          String   @id @default(cuid())
-  name        String
-  website     String?
-  description String?
+  title       String
+  fileName    String
+  fileUrl     String
+  fileSize    Int
+  isMain      Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  jobs        Job[]
-  users       User[]
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  applications Application[]
 }
 
 model Job {
-  id          String        @id @default(cuid())
-  title       String
-  description String
-  location    String?
-  type        JobType       @default(FULL_TIME)
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  company     Company       @relation(fields: [companyId], references: [id])
-  companyId   String
-  applications Application[]
-  views       JobView[]
-  savedBy     SavedJob[]
+  id              String        @id @default(cuid())
+  title           String
+  description     String
+  location        String?
+  type            JobType       @default(FULL_TIME)
+  industry        String?
+  experienceLevel ExperienceLevel?
+  salary          String?
+  requirements    String?
+  benefits        String?
+  remoteWork      Boolean       @default(false)
+  urgent          Boolean       @default(false)
+  featured        Boolean       @default(false)
+  isActive        Boolean       @default(true)
+  isApproved      Boolean       @default(false)
+  isReposted      Boolean       @default(false)
+  repostedAt      DateTime?
+  expiresAt       DateTime?
+  viewCount       Int           @default(0)
+  applicationCount Int          @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  company         Company       @relation(fields: [companyId], references: [id])
+  companyId       String
+  applications    Application[]
+  views           JobView[]
+  savedBy         SavedJob[]
+  jobRecommendations JobRecommendation[]
+  jobSkills       JobSkill[]
+  interviews      Interview[]
 }
 
 model Application {
-  id        String   @id @default(cuid())
-  status    AppStatus @default(PENDING)
-  cvUrl     String?
-  coverLetter String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  job       Job      @relation(fields: [jobId], references: [id])
-  jobId     String
+  id              String   @id @default(cuid())
+  status          AppStatus @default(PENDING)
+  cvUrl           String?
+  cv              CV?      @relation(fields: [cvId], references: [id])
+  cvId            String?
+  coverLetter     String?
+  appliedAt       DateTime @default(now())
+  expectedSalary  String?
+  availableFrom   DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  job             Job      @relation(fields: [jobId], references: [id])
+  jobId           String
+  internalNotes   InternalNote[]
+  interview       Interview?
 }
 
 model Profile {
@@ -105,10 +190,43 @@ model JobView {
   viewedAt  DateTime @default(now())
 }
 
+model JobRecommendation {
+  id        String   @id @default(cuid())
+  score     Float
+  reason    String?
+  createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id])
+  jobId     String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  @@unique([userId, jobId])
+}
+
+model InternalNote {
+  id           String   @id @default(cuid())
+  content      String
+  isPrivate    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  author       User     @relation("NoteAuthor", fields: [authorId], references: [id])
+  authorId     String
+  application  Application? @relation(fields: [applicationId], references: [id])
+  applicationId String?
+  user         User?    @relation("NoteUser", fields: [userId], references: [id])
+  userId       String?
+}
+
 enum UserRole {
   ADMIN
   RECRUITER
   CANDIDATE
+}
+
+enum CompanyRole {
+  OWNER
+  MANAGER
+  RECRUITER
+  VIEWER
 }
 
 enum JobType {
@@ -124,4 +242,149 @@ enum AppStatus {
   INTERVIEW
   OFFER
   REJECTED
+}
+
+// New Enums
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum CompanySize {
+  STARTUP      // 1-10
+  SMALL        // 11-50
+  MEDIUM       // 51-200
+  LARGE        // 201-1000
+  ENTERPRISE   // 1000+
+}
+
+enum ExperienceLevel {
+  ENTRY        // 0-1 năm
+  JUNIOR       // 1-3 năm
+  MID          // 3-5 năm
+  SENIOR       // 5-8 năm
+  LEAD         // 8+ năm
+}
+
+enum NotificationType {
+  JOB_APPLICATION
+  JOB_APPROVED
+  JOB_REJECTED
+  INTERVIEW_SCHEDULED
+  APPLICATION_STATUS_CHANGED
+  NEW_JOB_MATCH
+  COMPANY_VERIFIED
+  SYSTEM_ANNOUNCEMENT
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+// New Models
+model Notification {
+  id          String   @id @default(cuid())
+  title       String
+  message     String
+  type        NotificationType
+  isRead      Boolean  @default(false)
+  data        Json?    // Dữ liệu bổ sung
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+model CompanyReview {
+  id          String   @id @default(cuid())
+  rating      Int      // 1-5 sao
+  title       String
+  comment     String?
+  pros        String?  // Ưu điểm
+  cons        String?  // Nhược điểm
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  company     Company  @relation(fields: [companyId], references: [id])
+  companyId   String
+  @@unique([userId, companyId])
+}
+
+model Interview {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  scheduledAt     DateTime
+  duration        Int?     // Phút
+  location        String?
+  meetingUrl      String?  // Online meeting
+  status          InterviewStatus @default(SCHEDULED)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  application     Application @relation(fields: [applicationId], references: [id])
+  applicationId   String      @unique
+  interviewer     User     @relation(fields: [interviewerId], references: [id])
+  interviewerId   String
+  job             Job      @relation(fields: [jobId], references: [id])
+  jobId           String
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String?  // Programming, Design, etc.
+  createdAt   DateTime @default(now())
+  userSkills  UserSkill[]
+  jobSkills   JobSkill[]
+}
+
+model UserSkill {
+  id                  String   @id @default(cuid())
+  level               SkillLevel
+  yearsOfExperience   Int?
+  user                User     @relation(fields: [userId], references: [id])
+  userId              String
+  skill               Skill    @relation(fields: [skillId], references: [id])
+  skillId             String
+  @@unique([userId, skillId])
+}
+
+model JobSkill {
+  id          String   @id @default(cuid())
+  isRequired  Boolean  @default(true)
+  job         Job      @relation(fields: [jobId], references: [id])
+  jobId       String
+  skill       Skill    @relation(fields: [skillId], references: [id])
+  skillId     String
+  company     Company  @relation(fields: [companyId], references: [id])
+  companyId   String
+  @@unique([jobId, skillId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // CREATE, UPDATE, DELETE
+  entityType  String   // User, Job, Company, etc.
+  entityId    String
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id])
+  userId      String?
 }
