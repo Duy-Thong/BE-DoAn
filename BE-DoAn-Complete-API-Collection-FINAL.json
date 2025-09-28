@@ -1,0 +1,840 @@
+{
+  "info": {
+    "name": "BE-DoAn Recruitment System API - COMPLETE",
+    "description": "Complete API collection with all endpoints including AI integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🔧 System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate1@gmail.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"fullName\": \"New User\",\n  \"phoneNumber\": \"+84 123 456 789\",\n  \"role\": \"CANDIDATE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔔 Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notifications?page=1&limit=10&unreadOnly=false",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "unreadOnly",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Notification by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/{{notification_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "{{notification_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/{{notification_id}}/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "{{notification_id}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/read-all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/{{notification_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "{{notification_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Notification Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⭐ Reviews",
+      "item": [
+        {
+          "name": "Get Company Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/reviews/company/{{company_id}}?page=1&limit=10&sortBy=newest",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reviews", "company", "{{company_id}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{company_id}}\",\n  \"rating\": 5,\n  \"title\": \"Great company to work for\",\n  \"comment\": \"Excellent work environment and benefits\",\n  \"pros\": \"Good salary, flexible hours\",\n  \"cons\": \"Long commute\",\n  \"workLifeBalance\": 4,\n  \"salaryBenefits\": 5,\n  \"careerGrowth\": 4,\n  \"management\": 5,\n  \"culture\": 5,\n  \"isAnonymous\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reviews",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reviews"]
+            }
+          }
+        },
+        {
+          "name": "Get My Reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reviews/my-reviews?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reviews", "my-reviews"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"title\": \"Updated Review Title\",\n  \"comment\": \"Updated comment\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reviews/{{review_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reviews", "{{review_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reviews/{{review_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reviews", "{{review_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Like Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reviews/{{review_id}}/like",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reviews", "{{review_id}}", "like"]
+            }
+          }
+        },
+        {
+          "name": "Report Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"SPAM\",\n  \"description\": \"This review contains spam content\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reviews/{{review_id}}/report",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reviews", "{{review_id}}", "report"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 File Uploads",
+      "item": [
+        {
+          "name": "Upload CV",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "path/to/cv.pdf"
+                },
+                {
+                  "key": "title",
+                  "value": "My Professional CV",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Updated CV with latest experience",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/uploads/cv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploads", "cv"]
+            }
+          }
+        },
+        {
+          "name": "Upload Company Logo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "path/to/logo.png"
+                },
+                {
+                  "key": "title",
+                  "value": "Company Logo",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/uploads/logo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploads", "logo"]
+            }
+          }
+        },
+        {
+          "name": "Upload Multiple Files",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "path/to/file1.pdf"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "path/to/file2.pdf"
+                },
+                {
+                  "key": "title",
+                  "value": "Document Bundle",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/uploads/document/multiple",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploads", "document", "multiple"]
+            }
+          }
+        },
+        {
+          "name": "Get My Files",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/uploads/my-files?page=1&limit=10&category=CV",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploads", "my-files"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "category",
+                  "value": "CV"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download File",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/uploads/{{file_id}}/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploads", "{{file_id}}", "download"]
+            }
+          }
+        },
+        {
+          "name": "Delete File",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/uploads/{{file_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploads", "{{file_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🤖 AI Integration",
+      "item": [
+        {
+          "name": "AI Service Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ai/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "status"]
+            }
+          }
+        },
+        {
+          "name": "Generate Embedding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Experienced full-stack developer with 5+ years in React and Node.js\",\n  \"type\": \"CV\",\n  \"metadata\": {\n    \"userId\": \"{{user_id}}\",\n    \"cvId\": \"{{cv_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/embeddings/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "embeddings", "generate"]
+            }
+          }
+        },
+        {
+          "name": "Get My Embeddings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ai/embeddings?page=1&limit=10&type=CV",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "embeddings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "type",
+                  "value": "CV"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generate Job Recommendations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{user_id}}\",\n  \"type\": \"JOB_RECOMMENDATION\",\n  \"filters\": {\n    \"location\": \"Ho Chi Minh City\",\n    \"type\": \"FULL_TIME\",\n    \"experienceLevel\": \"SENIOR\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/recommendations/jobs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "recommendations", "jobs"]
+            }
+          }
+        },
+        {
+          "name": "Generate Candidate Recommendations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobId\": \"{{job_id}}\",\n  \"type\": \"CANDIDATE_RECOMMENDATION\",\n  \"filters\": {\n    \"location\": \"Ho Chi Minh City\",\n    \"experienceLevel\": \"SENIOR\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/recommendations/candidates",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "recommendations", "candidates"]
+            }
+          }
+        },
+        {
+          "name": "Analyze CV",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cvId\": \"{{cv_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/analyze/cv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "analyze", "cv"]
+            }
+          }
+        },
+        {
+          "name": "Analyze Job Description",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobId\": \"{{job_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/analyze/job",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "analyze", "job"]
+            }
+          }
+        },
+        {
+          "name": "Batch Process Embeddings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"content\": \"CV content 1\",\n      \"type\": \"CV\",\n      \"metadata\": {}\n    },\n    {\n      \"content\": \"CV content 2\",\n      \"type\": \"CV\",\n      \"metadata\": {}\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/embeddings/batch",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "embeddings", "batch"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4000",
+      "disabled": false
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "disabled": false
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "disabled": false
+    },
+    {
+      "key": "company_id",
+      "value": "cmg38zzsb0003nyusd1bxo1au",
+      "disabled": false
+    },
+    {
+      "key": "job_id",
+      "value": "cmg390cqe0016nytski2dwr8g",
+      "disabled": false
+    },
+    {
+      "key": "user_id",
+      "value": "cmg3jxcx8000enylkw96q1g7z",
+      "disabled": false
+    },
+    {
+      "key": "cv_id",
+      "value": "cv_id_here",
+      "disabled": false
+    },
+    {
+      "key": "file_id",
+      "value": "file_id_here",
+      "disabled": false
+    },
+    {
+      "key": "notification_id",
+      "value": "notification_id_here",
+      "disabled": false
+    },
+    {
+      "key": "review_id",
+      "value": "review_id_here",
+      "disabled": false
+    },
+    {
+      "key": "search_query",
+      "value": "developer",
+      "disabled": false
+    },
+    {
+      "key": "location",
+      "value": "Ho Chi Minh City",
+      "disabled": false
+    },
+    {
+      "key": "job_type",
+      "value": "FULL_TIME",
+      "disabled": false
+    }
+  ]
+}

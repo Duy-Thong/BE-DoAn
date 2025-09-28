@@ -21,6 +21,10 @@ import applicationManagementRouter from '../modules/application-management/route
 import jobRecommendationsRouter from '../modules/job-recommendations/routes.js';
 import adminRouter from '../modules/admin/routes.js';
 import companyInfoRouter from '../modules/company-info/routes.js';
+// Additional modules
+import { notificationsRouter } from '../modules/notifications/routes.js';
+import { reviewsRouter } from '../modules/reviews/routes.js';
+import { aiIntegrationRouter } from '../modules/ai-integration/routes.js';
 
 export function createExpressApp() {
   const app = express();
@@ -52,6 +56,11 @@ export function createExpressApp() {
   app.use('/api/job-recommendations', jobRecommendationsRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/company-info', companyInfoRouter);
+  
+  // Additional modules
+  app.use('/api/notifications', notificationsRouter);
+  app.use('/api/reviews', reviewsRouter);
+  app.use('/api/ai', aiIntegrationRouter);
   
   // serve static uploads
   app.use('/uploads', express.static('uploads'));
