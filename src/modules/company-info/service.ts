@@ -87,8 +87,8 @@ export class CompanyInfoService {
     const where = {
       isActive: true,
       OR: [
-        { name: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } }
+        { name: { contains: query, mode: 'insensitive' as const } },
+        { description: { contains: query, mode: 'insensitive' as const } }
       ]
     };
 

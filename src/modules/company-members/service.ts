@@ -205,7 +205,7 @@ export class CompanyMemberService {
       where: {
         userId,
         companyId,
-        role: { in: requiredRoles }
+        role: { in: requiredRoles as any[] }
       }
     });
 

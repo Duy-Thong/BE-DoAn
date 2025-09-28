@@ -335,7 +335,8 @@ export class ApplicationManagementService {
               select: {
                 id: true,
                 title: true,
-                status: true
+                isActive: true,
+                isApproved: true
               }
             }
           }
