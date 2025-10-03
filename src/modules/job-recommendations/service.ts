@@ -1,5 +1,6 @@
 import { PrismaClient } from '../../generated/prisma/index.js';
 import { GetRecommendationsDto, UpdateRecommendationDto } from './dto.js';
+import { aiClient } from '../../services/ai-client.js';
 
 const prisma = new PrismaClient();
 
@@ -317,5 +318,94 @@ export class JobRecommendationService {
     return await prisma.jobRecommendation.delete({
       where: { id: recommendation.id }
     });
+  }
+
+  // Lấy gợi ý từ AI service
+  async getAIRecommendations(userId: string, k: number = 5) {
+    try {
+      // Gọi AI service để lấy job IDs
+      const aiResponse = await aiClient.getJobMatches(userId, k);
+      
+      if (!aiResponse || !aiResponse.jobIds || aiResponse.jobIds.length === 0) {
+        return {
+          recommendations: [],
+          message: 'No recommendations found from AI service'
+        };
+      }
+
+      // Lấy thông tin chi tiết của các jobs từ database
+      const jobs = await prisma.job.findMany({
+        where: {
+          id: { in: aiResponse.jobIds },
+          isActive: true,
+          isApproved: true
+        },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+              logoUrl: true,
+              isVerified: true
+            }
+          },
+          _count: {
+            select: {
+              applications: true,
+              views: true
+            }
+          }
+        }
+      });
+
+      // Sắp xếp jobs theo thứ tự từ AI service
+      const orderedJobs = aiResponse.jobIds
+        .map(jobId => jobs.find(job => job.id === jobId))
+        .filter((job): job is NonNullable<typeof job> => job !== undefined);
+
+      // Lưu recommendations vào database để tracking
+      await Promise.all(
+        orderedJobs.map(async (job, index) => {
+          const score = 1 - (index * 0.1); // Điểm giảm dần theo thứ tự
+          
+          await prisma.jobRecommendation.upsert({
+            where: {
+              userId_jobId: {
+                userId,
+                jobId: job.id
+              }
+            },
+            update: {
+              score,
+              reason: 'AI-powered recommendation based on profile and preferences'
+            },
+            create: {
+              userId,
+              jobId: job.id,
+              score,
+              reason: 'AI-powered recommendation based on profile and preferences'
+            }
+          });
+        })
+      );
+
+      return {
+        recommendations: orderedJobs.map((job, index) => ({
+          ...job,
+          recommendationScore: 1 - (index * 0.1),
+          recommendationReason: 'AI-powered recommendation',
+          rank: index + 1
+        })),
+        total: orderedJobs.length,
+        source: 'AI Service'
+      };
+    } catch (error) {
+      console.error('Error getting AI recommendations:', error);
+      throw new Error(
+        error instanceof Error 
+          ? `Failed to get AI recommendations: ${error.message}` 
+          : 'Failed to get AI recommendations'
+      );
+    }
   }
 }

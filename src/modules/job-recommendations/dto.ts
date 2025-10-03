@@ -11,5 +11,11 @@ export const updateRecommendationDto = z.object({
   reason: z.string().optional(),
 });
 
+export const getAIRecommendationsDto = z.object({
+  userId: z.string().cuid('Invalid user ID'),
+  k: z.number().min(1).max(20).default(5),
+});
+
 export type GetRecommendationsDto = z.infer<typeof getRecommendationsDto>;
 export type UpdateRecommendationDto = z.infer<typeof updateRecommendationDto>;
+export type GetAIRecommendationsDto = z.infer<typeof getAIRecommendationsDto>;

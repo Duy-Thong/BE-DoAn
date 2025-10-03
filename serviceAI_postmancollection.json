@@ -1,0 +1,260 @@
+{
+  "info": {
+    "_postman_id": "04e62069-13b1-41f8-97c2-86fb0aaf72ef",
+    "name": "AI Job Recommendation Service (Prisma Schema)",
+    "description": "REST API collection for AI Job Recommendation Service using production Prisma database schema.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "sampleJobId1",
+      "value": "cm2a8b9c0d1e2f3g4h5i",
+      "type": "string"
+    },
+    {
+      "key": "sampleJobId2",
+      "value": "cm2a8b9c0d1e2f3g4h5j",
+      "type": "string"
+    },
+    {
+      "key": "sampleCompanyId1",
+      "value": "cm2x1y2z3a4b5c6d7e8f",
+      "type": "string"
+    },
+    {
+      "key": "sampleCompanyId2",
+      "value": "cm2x1y2z3a4b5c6d7e8g",
+      "type": "string"
+    },
+    {
+      "key": "sampleUserId",
+      "value": "cm2u9v0w1x2y3z4a5b6c",
+      "type": "string"
+    },
+    {
+      "key": "sampleCvId",
+      "value": "cm2c7d8e9f0g1h2i3j4k",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Check service health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "List all jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create job with embedding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{sampleJobId1}}\",\n  \"title\": \"Senior Machine Learning Engineer\",\n  \"description\": \"Build and deploy production ML models for recommendation systems.\",\n  \"companyId\": \"{{sampleCompanyId1}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Embed structured job (full)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{sampleJobId2}}\",\n  \"title\": \"Data Analyst\",\n  \"description\": \"Analyze data from multiple sources to drive business decisions.\",\n  \"companyId\": \"{{sampleCompanyId2}}\",\n  \"location\": \"Remote\",\n  \"type\": \"FULL_TIME\",\n  \"industry\": \"Technology\",\n  \"experienceLevel\": \"MID\",\n  \"salary\": \"$70,000 - $90,000\",\n  \"requirements\": \"3+ years SQL, Python, data visualization tools\",\n  \"benefits\": \"Health insurance, 401k, flexible hours\",\n  \"remoteWork\": true,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/embed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "embed"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Match jobs for user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/match?user_id={{sampleUserId}}&k=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "match"],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "{{sampleUserId}}"
+                },
+                {
+                  "key": "k",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rebuild job index",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/index/rebuild",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "index", "rebuild"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CVs",
+      "item": [
+        {
+          "name": "List all CVs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cvs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cvs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload CV PDF",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cvs/{{sampleCvId}}/embedding",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cvs", "{{sampleCvId}}", "embedding"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List all users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{sampleUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{sampleUserId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Recommendations",
+      "item": [
+        {
+          "name": "Get recommendations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recommendations/{{sampleUserId}}?k=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recommendations", "{{sampleUserId}}"],
+              "query": [
+                {
+                  "key": "k",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

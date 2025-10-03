@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const AIConfigSchema = z.object({
-  AI_SERVICE_URL: z.string().url().default('http://localhost:5000'),
+  AI_SERVICE_URL: z.string().url().default('http://127.0.0.1:8000'),
   AI_SERVICE_TIMEOUT: z.coerce.number().default(30000), // 30 seconds
   AI_SERVICE_RETRY_ATTEMPTS: z.coerce.number().default(3),
   AI_EMBEDDING_MODEL: z.string().default('text-embedding-ada-002'),
@@ -32,6 +32,9 @@ export const AI_ENDPOINTS = {
     CV: '/api/analyze/cv',
     JOB: '/api/analyze/job',
     MATCH: '/api/analyze/match'
+  },
+  JOBS: {
+    MATCH: '/api/jobs/match'
   }
 } as const;
 

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { JobRecommendationService } from './service.js';
-import { getRecommendationsDto, updateRecommendationDto } from './dto.js';
+import { getRecommendationsDto, updateRecommendationDto, getAIRecommendationsDto } from './dto.js';
 
 const recommendationService = new JobRecommendationService();
 
@@ -105,6 +105,33 @@ export class JobRecommendationController {
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Failed to remove recommendation'
+      });
+    }
+  }
+
+  // Lấy gợi ý từ AI service
+  async getAIRecommendations(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const k = req.query.k ? parseInt(req.query.k as string) : 5;
+
+      // Validate input
+      const validatedData = getAIRecommendationsDto.parse({ userId, k });
+
+      const result = await recommendationService.getAIRecommendations(
+        validatedData.userId,
+        validatedData.k
+      );
+
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      console.error('Error in getAIRecommendations controller:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get AI recommendations'
       });
     }
   }

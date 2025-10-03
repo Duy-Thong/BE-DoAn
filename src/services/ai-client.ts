@@ -80,7 +80,7 @@ class AIServiceClient {
         throw new Error(`AI Service error: ${response.status} ${response.statusText}`);
       }
 
-      return await response.json();
+      return await response.json() as T;
     } catch (error) {
       clearTimeout(timeoutId);
       throw error;
@@ -191,6 +191,14 @@ class AIServiceClient {
       method: 'POST',
       body: JSON.stringify({ cvContent, jobContent }),
     });
+  }
+
+  // Get job matches for user from AI service
+  async getJobMatches(userId: string, k: number = 5): Promise<{
+    jobIds: string[];
+    userId: string;
+  }> {
+    return this.retryRequest(`${AI_ENDPOINTS.JOBS.MATCH}?user_id=${userId}&k=${k}`);
   }
 }
 

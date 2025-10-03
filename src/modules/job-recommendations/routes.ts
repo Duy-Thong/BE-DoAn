@@ -11,6 +11,7 @@ router.use(authMiddleware);
 // Job recommendation routes
 router.get('/generate', recommendationController.generateRecommendations.bind(recommendationController));
 router.get('/saved', recommendationController.getSavedRecommendations.bind(recommendationController));
+router.get('/ai/:userId', recommendationController.getAIRecommendations.bind(recommendationController));
 router.put('/update', recommendationController.updateRecommendation.bind(recommendationController));
 router.delete('/:jobId', recommendationController.removeRecommendation.bind(recommendationController));
 
