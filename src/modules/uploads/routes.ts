@@ -123,6 +123,7 @@ uploadsRouter.post('/:type', requireAuth, upload.single('file'), async (req, res
         size: req.file.size,
         path: req.file.path,
         url: `/uploads/${uploadType}/${req.file.filename}`,
+        uploadedBy: userId,
         userId,
         title: title || req.file.originalname,
         description,
@@ -179,6 +180,7 @@ uploadsRouter.post('/:type/multiple', requireAuth, upload.array('files', 5), asy
             size: file.size,
             path: file.path,
             url: `/uploads/${uploadType}/${file.filename}`,
+            uploadedBy: userId,
             userId,
             title: title || file.originalname,
             description,
@@ -258,7 +260,7 @@ uploadsRouter.get('/:id', requireAuth, async (req, res) => {
     const file = await prisma.upload.findFirst({
       where: {
         id: req.params.id,
-        userId: req.user!.id
+        uploadedBy: req.user!.id
       }
     });
 
@@ -289,11 +291,11 @@ uploadsRouter.put('/:id', requireAuth, async (req, res) => {
     const file = await prisma.upload.updateMany({
       where: {
         id: req.params.id,
-        userId: req.user!.id
+        uploadedBy: req.user!.id
       },
       data: {
-        title,
-        description
+        title: title || undefined,
+        description: description || undefined
       }
     });
 
@@ -322,7 +324,7 @@ uploadsRouter.delete('/:id', requireAuth, async (req, res) => {
     const file = await prisma.upload.findFirst({
       where: {
         id: req.params.id,
-        userId: req.user!.id
+        uploadedBy: req.user!.id
       }
     });
 
@@ -361,7 +363,7 @@ uploadsRouter.get('/:id/download', requireAuth, async (req, res) => {
     const file = await prisma.upload.findFirst({
       where: {
         id: req.params.id,
-        userId: req.user!.id
+        uploadedBy: req.user!.id
       }
     });
 

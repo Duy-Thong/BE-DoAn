@@ -269,7 +269,7 @@ export function requireApplicationAccess() {
 
       // Check if user is company member
       const member = application.job.company.members.find(m => m.userId === req.user.id);
-      if (member && [COMPANY_MEMBER_ROLES.OWNER, COMPANY_MEMBER_ROLES.MANAGER, COMPANY_MEMBER_ROLES.RECRUITER].includes(member.role)) {
+      if (member && [COMPANY_MEMBER_ROLES.OWNER, COMPANY_MEMBER_ROLES.MANAGER, COMPANY_MEMBER_ROLES.RECRUITER].includes(member.role as any)) {
         req.application = application;
         req.companyMember = member;
         return next();
@@ -418,8 +418,8 @@ export function requireFileAccess() {
       }
 
       // Check if user is admin or owns the file
-      if (req.user.role === USER_ROLES.ADMIN || file.userId === req.user.id) {
-        req.file = file;
+      if (req.user.role === USER_ROLES.ADMIN || file.uploadedBy === req.user.id) {
+        req.upload = file;
         return next();
       }
 
@@ -474,7 +474,7 @@ export function requireRecruiterAccess() {
       return next(new AuthorizationError('Không có quyền truy cập'));
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.RECRUITER].includes(req.user.role)) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.RECRUITER].includes(req.user.role as any)) {
       return next(new AuthorizationError('Chỉ nhà tuyển dụng mới có quyền truy cập'));
     }
 
@@ -491,7 +491,7 @@ export function requireCandidateAccess() {
       return next(new AuthorizationError('Không có quyền truy cập'));
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.CANDIDATE].includes(req.user.role)) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.CANDIDATE].includes(req.user.role as any)) {
       return next(new AuthorizationError('Chỉ ứng viên mới có quyền truy cập'));
     }
 

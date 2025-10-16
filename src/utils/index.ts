@@ -22,7 +22,7 @@ export { APP_CONSTANTS, HTTP_STATUS, USER_ROLES, COMPANY_MEMBER_ROLES, JOB_TYPES
 
 // Re-export types
 export type { RetryOptions } from './retry.js';
-export type { ApiResponse, PaginationOptions, PaginationResult, PaginationMeta } from './response.js';
+export type { ApiResponse } from './response.js';
 export type { PaginationOptions as PaginationOptionsType, PaginationResult as PaginationResultType, PaginationMeta as PaginationMetaType } from './pagination.js';
 export type { FileInfo } from './file.js';
 export type { CacheOptions, CacheItem } from './cache.js';

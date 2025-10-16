@@ -104,7 +104,6 @@ export const APP_CONSTANTS = {
   UNAUTHORIZED_MESSAGE: 'Không có quyền truy cập',
   FORBIDDEN_MESSAGE: 'Bị cấm truy cập',
   CONFLICT_MESSAGE: 'Xung đột dữ liệu',
-  VALIDATION_ERROR_MESSAGE: 'Dữ liệu không hợp lệ',
   INTERNAL_ERROR_MESSAGE: 'Lỗi máy chủ nội bộ',
 } as const;
 

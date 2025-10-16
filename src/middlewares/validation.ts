@@ -16,7 +16,7 @@ export function validateBody<T>(schema: z.ZodSchema<T>) {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
+        const errors = error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
@@ -36,11 +36,11 @@ export function validateBody<T>(schema: z.ZodSchema<T>) {
 export function validateQuery<T>(schema: z.ZodSchema<T>) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.query = schema.parse(req.query);
+      req.query = schema.parse(req.query) as any;
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
+        const errors = error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
@@ -60,11 +60,11 @@ export function validateQuery<T>(schema: z.ZodSchema<T>) {
 export function validateParams<T>(schema: z.ZodSchema<T>) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.params = schema.parse(req.params);
+      req.params = schema.parse(req.params) as any;
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
+        const errors = error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
@@ -84,11 +84,11 @@ export function validateParams<T>(schema: z.ZodSchema<T>) {
 export function validateHeaders<T>(schema: z.ZodSchema<T>) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.headers = schema.parse(req.headers);
+      req.headers = schema.parse(req.headers) as any;
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
+        const errors = error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
@@ -296,7 +296,7 @@ export function validateNested<T>(schema: z.ZodSchema<T>) {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
+        const errors = error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message,
           code: err.code,

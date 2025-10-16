@@ -127,6 +127,9 @@ model CV {
   // Virtual relationships (computed via ownerType + ownerId)
   socialMedia     SocialMedia[] @relation("CVSocialMedia")
   
+  // Applications using this CV
+  applications    Application[]
+  
   // Metadata
   version         Int      @default(1)
   lastGeneratedAt DateTime?
@@ -216,9 +219,9 @@ model SocialMedia {
   ownerId     String   // ID of the owner (user, company, or cv)
   
   // Virtual relationships (computed via ownerType + ownerId)
-  user        User?    @relation("UserSocialMedia", fields: [ownerId], references: [id], map: "ownerId")
-  company     Company? @relation("CompanySocialMedia", fields: [ownerId], references: [id], map: "ownerId")
-  cv          CV?      @relation("CVSocialMedia", fields: [ownerId], references: [id], map: "ownerId")
+  user        User?    @relation("UserSocialMedia", fields: [ownerId], references: [id], map: "user_ownerId_fkey")
+  company     Company? @relation("CompanySocialMedia", fields: [ownerId], references: [id], map: "company_ownerId_fkey")
+  cv          CV?      @relation("CVSocialMedia", fields: [ownerId], references: [id], map: "cv_ownerId_fkey")
   
   @@index([platform])
   @@index([ownerType, ownerId])
@@ -244,6 +247,7 @@ model JobAlert {
   keywords  String?
   location  String?
   type      JobType?
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 }
 
@@ -303,6 +307,14 @@ enum CompanySize {
   MEDIUM       // 51-200
   LARGE        // 201-1000
   ENTERPRISE   // 1000+
+}
+
+enum UploadCategory {
+  AVATAR
+  LOGO
+  DOCUMENT
+  CV_FILE
+  OTHER
 }
 
 enum ExperienceLevel {
@@ -536,5 +548,27 @@ model JobSkill {
   @@unique([jobId, skillName])
   @@index([jobId])
   @@index([skillName])
+}
+
+// File uploads tracking
+model Upload {
+  id          String   @id @default(cuid())
+  fileName    String
+  originalName String
+  mimeType    String
+  size        Int
+  path        String
+  url         String   // Full URL to access the file
+  title       String?  // Optional title for the file
+  description String?  // Optional description
+  category    UploadCategory
+  uploadedBy  String?  // User ID who uploaded
+  userId      String?  // Alias for uploadedBy for compatibility
+  createdAt   DateTime @default(now())
+  
+  @@index([uploadedBy])
+  @@index([userId])
+  @@index([category])
+  @@index([createdAt])
 }
 

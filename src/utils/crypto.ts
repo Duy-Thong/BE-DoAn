@@ -73,7 +73,7 @@ export class CryptoUtils {
    */
   static encrypt(data: string, secret: string): { encrypted: string; iv: string; tag: string } {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher('aes-256-gcm', secret);
+    const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(secret, 'hex'), iv);
     cipher.setAAD(Buffer.from('additional-data', 'utf8'));
     
     let encrypted = cipher.update(data, 'utf8', 'hex');
@@ -92,7 +92,7 @@ export class CryptoUtils {
    * Decrypt data with AES-256-GCM
    */
   static decrypt(encryptedData: { encrypted: string; iv: string; tag: string }, secret: string): string {
-    const decipher = crypto.createDecipher('aes-256-gcm', secret);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(secret, 'hex'), Buffer.from(encryptedData.iv, 'hex'));
     decipher.setAAD(Buffer.from('additional-data', 'utf8'));
     decipher.setAuthTag(Buffer.from(encryptedData.tag, 'hex'));
     
