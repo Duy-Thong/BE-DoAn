@@ -23,12 +23,12 @@ searchRouter.get('/jobs', async (req, res) => {
           OR: [
             { title: { contains: q, mode: 'insensitive' as const } }, 
             { description: { contains: q, mode: 'insensitive' as const } },
-            { requirements: { contains: q, mode: 'insensitive' as const } }
+            { requirements: { some: { title: { contains: q, mode: 'insensitive' as const } } } },
+            { requirements: { some: { description: { contains: q, mode: 'insensitive' as const } } } }
           ] 
         } : {},
         location ? { location: { contains: location, mode: 'insensitive' as const } } : {},
         type ? { type: type as any } : {},
-        experience ? { experienceLevel: experience as any } : {},
       ],
     };
 
@@ -42,7 +42,14 @@ searchRouter.get('/jobs', async (req, res) => {
             select: {
               id: true,
               name: true,
-              logo: true
+              logoUrl: true,
+              isVerified: true
+            }
+          },
+          _count: {
+            select: {
+              applications: true,
+              views: true
             }
           }
         },
@@ -163,14 +170,8 @@ searchRouter.get('/users', requireAuth, async (req, res) => {
           fullName: true,
           role: true,
           phoneNumber: true,
-          createdAt: true,
-          profile: {
-            select: {
-              headline: true,
-              location: true,
-              experience: true
-            }
-          }
+          avatarUrl: true,
+          createdAt: true
         },
         orderBy: { createdAt: 'desc' }
       }),

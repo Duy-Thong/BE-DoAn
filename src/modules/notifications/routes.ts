@@ -6,12 +6,12 @@ import { z } from 'zod';
 export const notificationsRouter = Router();
 
 const CreateNotificationSchema = z.object({
-  title: z.string().min(1),
-  message: z.string().min(1),
-  type: z.enum(['INFO', 'SUCCESS', 'WARNING', 'ERROR', 'APPLICATION', 'JOB', 'COMPANY']).default('INFO'),
+  title: z.string().min(1, 'Tiêu đề không được để trống'),
+  message: z.string().min(1, 'Nội dung không được để trống'),
+  type: z.enum(['INFO', 'SUCCESS', 'WARNING', 'ERROR', 'APPLICATION', 'JOB', 'COMPANY', 'CV', 'PROFILE', 'SYSTEM']).default('INFO'),
   userId: z.string().optional(),
   relatedId: z.string().optional(),
-  relatedType: z.enum(['JOB', 'APPLICATION', 'COMPANY', 'USER']).optional()
+  relatedType: z.enum(['JOB', 'APPLICATION', 'COMPANY', 'USER', 'CV', 'PROFILE']).optional()
 });
 
 // Get user notifications

@@ -27,22 +27,22 @@ model User {
   avatarUrl       String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  
+  // Core relationships only
   applications    Application[]
-  company         Company?       @relation(fields: [companyId], references: [id])
-  companyId       String?
-  profile         Profile?
   savedJobs       SavedJob[]
   jobAlerts       JobAlert[]
   cvs             CV[]
   companyMembers  CompanyMember[]
-  internalNotes   InternalNote[] @relation("NoteAuthor")
-  internalNotesForUser InternalNote[] @relation("NoteUser")
-  jobRecommendations JobRecommendation[]
   notifications   Notification[]
-  companyReviews  CompanyReview[]
-  userSkills      UserSkill[]
-  interviews      Interview[]
-  auditLogs       AuditLog[]
+  
+  // Virtual relationships (computed via ownerType + ownerId)
+  socialMedia     SocialMedia[] @relation("UserSocialMedia")
+  
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([role])
+  @@index([isActive])
 }
 
 model Company {
@@ -53,7 +53,6 @@ model Company {
   industry        String?
   companySize     CompanySize?
   foundedYear     Int?
-  taxCode         String?
   address         String?
   phone           String?
   email           String?
@@ -61,14 +60,18 @@ model Company {
   isVerified      Boolean  @default(false)
   isActive        Boolean  @default(true)
   isEmailVerified Boolean  @default(false)
-  socialMedia     Json?    // {linkedin, facebook, twitter, etc.}
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   jobs            Job[]
-  users           User[]
   members         CompanyMember[]
-  reviews         CompanyReview[]
-  jobSkills       JobSkill[]
+  
+  // Virtual relationships (computed via ownerType + ownerId)
+  socialMedia     SocialMedia[] @relation("CompanySocialMedia")
+  
+  @@index([name])
+  @@index([industry])
+  @@index([isActive, isVerified])
+  @@index([createdAt])
 }
 
 model CompanyMember {
@@ -79,68 +82,109 @@ model CompanyMember {
   userId    String
   company   Company       @relation(fields: [companyId], references: [id])
   companyId String
-  invitedBy String?       // User ID who invited this member
+  invitedBy String?       // User ID who invited this member (no FK constraint)
+  
   @@unique([userId, companyId])
+  @@index([companyId])
+  @@index([userId])
 }
 
 model CV {
-  id          String   @id @default(cuid())
-  title       String
-  fileName    String
-  fileUrl     String
-  fileSize    Int
-  isMain      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  embedding   Float[] 
-  applications Application[]
+  id              String   @id @default(cuid())
+  title           String
+  isMain          Boolean  @default(false)
+  
+  // Personal Information
+  fullName        String
+  email           String
+  phoneNumber     String?
+  dateOfBirth     DateTime?
+  gender          Gender?
+  nationality     String?
+  address         String?
+  avatarUrl       String?
+  
+  // Social Links handled by SocialMedia model
+  
+  // Current Position (like LinkedIn headline)
+  currentPosition String?  // "Senior Developer at ABC Corp"
+  
+  // Professional Summary
+  summary         String?
+  objective       String?
+  
+  // Relationships to detailed information
+  workExperience  WorkExperience[]
+  education       Education[]
+  languages       Language[]
+  certifications  Certification[]
+  projects        Project[]
+  achievements    Achievement[]
+  references      Reference[]
+  skills          CVSkill[]
+  activities      Activity[]
+  
+  // Virtual relationships (computed via ownerType + ownerId)
+  socialMedia     SocialMedia[] @relation("CVSocialMedia")
+  
+  // Metadata
+  version         Int      @default(1)
+  lastGeneratedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  embedding       Float[]
+  
+  @@index([userId])
+  @@index([isMain])
+  @@index([createdAt])
 }
 
 model Job {
   id              String        @id @default(cuid())
   title           String
-  description     String
+  description     String?
   location        String?
   type            JobType       @default(FULL_TIME)
-  industry        String?
-  experienceLevel ExperienceLevel?
   salary          String?
-  requirements    String?
-  benefits        String?
   embedding       Float[] 
   remoteWork      Boolean       @default(false)
   urgent          Boolean       @default(false)
   featured        Boolean       @default(false)
   isActive        Boolean       @default(true)
   isApproved      Boolean       @default(false)
-  isReposted      Boolean       @default(false)
-  repostedAt      DateTime?
   expiresAt       DateTime?
   viewCount       Int           @default(0)
   applicationCount Int          @default(0)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  
   company         Company       @relation(fields: [companyId], references: [id])
   companyId       String
   applications    Application[]
   views           JobView[]
   savedBy         SavedJob[]
-  jobRecommendations JobRecommendation[]
+  requirements    JobRequirement[]
+  benefits        JobBenefit[]
   jobSkills       JobSkill[]
-  interviews      Interview[]
+  
+  @@index([companyId])
+  @@index([isActive, isApproved])
+  @@index([type])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([featured, isActive])
 }
 
 model Application {
   id              String   @id @default(cuid())
   status          AppStatus @default(PENDING)
-  cvUrl           String?
   cv              CV?      @relation(fields: [cvId], references: [id])
   cvId            String?
   coverLetter     String?
   appliedAt       DateTime @default(now())
-  expectedSalary  String?
   availableFrom   DateTime?
   notes           String?
   createdAt       DateTime @default(now())
@@ -149,20 +193,35 @@ model Application {
   userId          String
   job             Job      @relation(fields: [jobId], references: [id])
   jobId           String
-  internalNotes   InternalNote[]
-  interview       Interview?
+  
+  @@index([userId, status])
+  @@index([jobId, status])
+  @@index([appliedAt])
 }
 
-model Profile {
-  id          String  @id @default(cuid())
-  user        User    @relation(fields: [userId], references: [id])
-  userId      String  @unique
-  headline    String?
-  location    String?
-  experience  String?
-  education   String?
-  skills      String?
-  avatarUrl   String?
+// Profile model removed - information is already in CV and User models
+
+// CV detail models removed - using structured JSON instead for better performance
+
+model SocialMedia {
+  id          String   @id @default(cuid())
+  platform    String   // linkedin, facebook, twitter, instagram, github, blog, website, etc.
+  url         String
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Polymorphic relationship
+  ownerType   String   // "User", "Company", "CV"
+  ownerId     String   // ID of the owner (user, company, or cv)
+  
+  // Virtual relationships (computed via ownerType + ownerId)
+  user        User?    @relation("UserSocialMedia", fields: [ownerId], references: [id], map: "ownerId")
+  company     Company? @relation("CompanySocialMedia", fields: [ownerId], references: [id], map: "ownerId")
+  cv          CV?      @relation("CVSocialMedia", fields: [ownerId], references: [id], map: "ownerId")
+  
+  @@index([platform])
+  @@index([ownerType, ownerId])
 }
 
 model SavedJob {
@@ -172,7 +231,10 @@ model SavedJob {
   job       Job      @relation(fields: [jobId], references: [id])
   jobId     String
   createdAt DateTime @default(now())
+  
   @@unique([userId, jobId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model JobAlert {
@@ -190,33 +252,14 @@ model JobView {
   job       Job      @relation(fields: [jobId], references: [id])
   jobId     String
   viewedAt  DateTime @default(now())
+  
+  @@index([jobId, viewedAt])
+  @@index([viewedAt])
 }
 
-model JobRecommendation {
-  id        String   @id @default(cuid())
-  score     Float
-  reason    String?
-  createdAt DateTime @default(now())
-  job       Job      @relation(fields: [jobId], references: [id])
-  jobId     String
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  @@unique([userId, jobId])
-}
+// JobRecommendation model removed - will use realtime search instead
 
-model InternalNote {
-  id           String   @id @default(cuid())
-  content      String
-  isPrivate    Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  author       User     @relation("NoteAuthor", fields: [authorId], references: [id])
-  authorId     String
-  application  Application? @relation(fields: [applicationId], references: [id])
-  applicationId String?
-  user         User?    @relation("NoteUser", fields: [userId], references: [id])
-  userId       String?
-}
+// InternalNote model removed - not needed for core functionality
 
 enum UserRole {
   ADMIN
@@ -281,18 +324,20 @@ enum NotificationType {
   SYSTEM_ANNOUNCEMENT
 }
 
-enum InterviewStatus {
-  SCHEDULED
-  COMPLETED
-  CANCELLED
-  RESCHEDULED
-}
+// InterviewStatus enum removed - Interview model removed
 
 enum SkillLevel {
   BEGINNER
   INTERMEDIATE
   ADVANCED
   EXPERT
+}
+
+enum LanguageLevel {
+  BASIC
+  CONVERSATIONAL
+  PROFESSIONAL
+  NATIVE
 }
 
 // New Models
@@ -306,87 +351,190 @@ model Notification {
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id])
   userId      String
+  
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@index([type])
 }
 
-model CompanyReview {
+
+
+model WorkExperience {
   id          String   @id @default(cuid())
-  rating      Int      // 1-5 sao
-  title       String
-  comment     String?
-  pros        String?  // Ưu điểm
-  cons        String?  // Nhược điểm
-  isVerified  Boolean  @default(false)
+  title       String   // Job title/position
+  company     String
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  company     Company  @relation(fields: [companyId], references: [id])
-  companyId   String
-  @@unique([userId, companyId])
+  
+  cv          CV       @relation(fields: [cvId], references: [id])
+  cvId        String
+  
+  @@index([cvId])
 }
 
-model Interview {
-  id              String   @id @default(cuid())
-  title           String
-  description     String?
-  scheduledAt     DateTime
-  duration        Int?     // Phút
-  location        String?
-  meetingUrl      String?  // Online meeting
-  status          InterviewStatus @default(SCHEDULED)
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  application     Application @relation(fields: [applicationId], references: [id])
-  applicationId   String      @unique
-  interviewer     User     @relation(fields: [interviewerId], references: [id])
-  interviewerId   String
-  job             Job      @relation(fields: [jobId], references: [id])
-  jobId           String
-}
-
-model Skill {
+model Education {
   id          String   @id @default(cuid())
-  name        String   @unique
-  category    String?  // Programming, Design, etc.
+  institution String
+  degree      String
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
   createdAt   DateTime @default(now())
-  userSkills  UserSkill[]
-  jobSkills   JobSkill[]
+  updatedAt   DateTime @updatedAt
+  
+  cv          CV       @relation(fields: [cvId], references: [id])
+  cvId        String
+  
+  @@index([cvId])
 }
 
-model UserSkill {
+model Language {
+  id          String   @id @default(cuid())
+  name        String
+  level       String?  // Basic, Intermediate, Advanced, Native
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  cv          CV       @relation(fields: [cvId], references: [id])
+  cvId        String
+  
+  @@index([cvId])
+}
+
+model Certification {
+  id          String   @id @default(cuid())
+  name        String
+  issuer      String?
+  acquiredAt  DateTime
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  cv          CV       @relation(fields: [cvId], references: [id])
+  cvId        String
+  
+  @@index([cvId])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  url         String?
+  role        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  cv          CV       @relation(fields: [cvId], references: [id])
+  cvId        String
+  
+  @@index([cvId])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  acquiredAt  DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  cv          CV       @relation(fields: [cvId], references: [id])
+  cvId        String
+  
+  @@index([cvId])
+}
+
+model Reference {
+  id          String   @id @default(cuid())
+  name        String
+  position    String?
+  company     String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  cv          CV       @relation(fields: [cvId], references: [id])
+  cvId        String
+  
+  @@index([cvId])
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  title       String   // "Volunteer Work", "Open Source Contribution", "Speaking", etc.
+  organization String? // Organization or event name
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  cv          CV       @relation(fields: [cvId], references: [id])
+  cvId        String
+  
+  @@index([cvId])
+}
+
+model CVSkill {
   id                  String   @id @default(cuid())
+  skillName           String   // "JavaScript", "React", "Python", etc.
   level               SkillLevel
   yearsOfExperience   Int?
-  user                User     @relation(fields: [userId], references: [id])
-  userId              String
-  skill               Skill    @relation(fields: [skillId], references: [id])
-  skillId             String
-  @@unique([userId, skillId])
+  description         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  cv                  CV       @relation(fields: [cvId], references: [id])
+  cvId                String
+  
+  @@unique([cvId, skillName])
+  @@index([cvId])
+  @@index([skillName])
+  @@index([level])
+}
+
+model JobRequirement {
+  id          String   @id @default(cuid())
+  title       String   // "Skills", "Experience", "Education", etc.
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  job         Job      @relation(fields: [jobId], references: [id])
+  jobId       String
+  
+  @@index([jobId])
+}
+
+model JobBenefit {
+  id          String   @id @default(cuid())
+  title       String   // "Health Insurance", "Remote Work", "Bonus", etc.
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  job         Job      @relation(fields: [jobId], references: [id])
+  jobId       String
+  
+  @@index([jobId])
 }
 
 model JobSkill {
   id          String   @id @default(cuid())
+  skillName   String   // Direct skill name: "JavaScript", "React", "Python", etc.
   isRequired  Boolean  @default(true)
   job         Job      @relation(fields: [jobId], references: [id])
   jobId       String
-  skill       Skill    @relation(fields: [skillId], references: [id])
-  skillId     String
-  company     Company  @relation(fields: [companyId], references: [id])
-  companyId   String
-  @@unique([jobId, skillId])
+  
+  @@unique([jobId, skillName])
+  @@index([jobId])
+  @@index([skillName])
 }
 
-model AuditLog {
-  id          String   @id @default(cuid())
-  action      String   // CREATE, UPDATE, DELETE
-  entityType  String   // User, Job, Company, etc.
-  entityId    String
-  oldValues   Json?
-  newValues   Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  user        User?    @relation(fields: [userId], references: [id])
-  userId      String?
-}

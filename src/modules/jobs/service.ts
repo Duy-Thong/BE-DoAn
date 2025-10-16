@@ -23,9 +23,11 @@ export class JobsService {
           }
         }
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy: [
+        { featured: 'desc' },
+        { urgent: 'desc' },
+        { createdAt: 'desc' }
+      ]
     });
   }
 
@@ -36,11 +38,13 @@ export class JobsService {
       location: input.location ?? null,
       type: (input.type as any) || 'FULL_TIME',
       salary: input.salary ?? null,
-      requirements: input.requirements ?? null,
-      benefits: input.benefits ?? null,
+      remoteWork: input.remoteWork,
+      urgent: input.urgent,
+      featured: input.featured,
       companyId: input.companyId,
       isActive: false, // Cần được duyệt trước khi active
-      isApproved: false
+      isApproved: false,
+      embedding: [], // TODO: Generate embedding using AI service
     };
 
     if (input.expiresAt) {
@@ -92,13 +96,18 @@ export class JobsService {
     if (input.location !== undefined) data.location = input.location ?? null;
     if (input.type !== undefined) data.type = input.type as any;
     if (input.salary !== undefined) data.salary = input.salary ?? null;
-    if (input.requirements !== undefined) data.requirements = input.requirements ?? null;
-    if (input.benefits !== undefined) data.benefits = input.benefits ?? null;
+    if (input.remoteWork !== undefined) data.remoteWork = input.remoteWork;
+    if (input.urgent !== undefined) data.urgent = input.urgent;
+    if (input.featured !== undefined) data.featured = input.featured;
     if (input.expiresAt !== undefined) data.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+    if (input.isActive !== undefined) data.isActive = input.isActive;
+    if (input.isApproved !== undefined) data.isApproved = input.isApproved;
     
-    // Khi update, cần duyệt lại
-    data.isApproved = false;
-    data.isActive = false;
+    // Khi update, cần duyệt lại (trừ khi admin cập nhật)
+    if (input.isApproved === undefined) {
+      data.isApproved = false;
+      data.isActive = false;
+    }
 
     return prisma.job.update({ 
       where: { id }, 
@@ -140,8 +149,6 @@ export class JobsService {
     }
 
     const data: any = {
-      isReposted: true,
-      repostedAt: new Date(),
       isApproved: false, // Cần duyệt lại khi tái đăng
       isActive: false
     };
@@ -200,6 +207,74 @@ export class JobsService {
     });
 
     return !!member;
+  }
+
+  // Track job view
+  async trackJobView(jobId: string) {
+    // Increment view count
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        viewCount: {
+          increment: 1
+        }
+      }
+    });
+
+    // Create view record
+    return await prisma.jobView.create({
+      data: {
+        jobId
+      }
+    });
+  }
+
+  // Generate job embedding (for AI recommendations)
+  async generateEmbedding(jobId: string) {
+    const job = await prisma.job.findUnique({
+      where: { id: jobId }
+    });
+
+    if (!job) {
+      throw new Error('Job không tìm thấy');
+    }
+
+    // TODO: Call AI service to generate embedding
+    // For now, return empty array
+    const embedding: number[] = [];
+    
+    return await prisma.job.update({
+      where: { id: jobId },
+      data: { embedding }
+    });
+  }
+
+  // Get job with all related data
+  async getJobWithDetails(jobId: string) {
+    return await prisma.job.findUnique({
+      where: { id: jobId },
+      include: {
+        company: {
+          select: {
+            name: true,
+            logoUrl: true,
+            isVerified: true,
+            description: true,
+            website: true,
+            address: true
+          }
+        },
+        requirements: true,
+        benefits: true,
+        jobSkills: true,
+        _count: {
+          select: {
+            applications: true,
+            views: true
+          }
+        }
+      }
+    });
   }
 }
 

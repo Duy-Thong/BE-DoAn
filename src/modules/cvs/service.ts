@@ -1,7 +1,5 @@
-import { PrismaClient } from '../../generated/prisma/index.js';
+import { prisma } from '../../loaders/prisma.js';
 import { CreateCVDto, UpdateCVDto, SetMainCVDto } from './dto.js';
-
-const prisma = new PrismaClient();
 
 export class CVService {
   // Tạo CV mới
@@ -13,9 +11,21 @@ export class CVService {
 
     const cv = await prisma.cV.create({
       data: {
-        ...data,
+        title: data.title,
+        fullName: data.fullName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+        gender: data.gender as any,
+        nationality: data.nationality,
+        address: data.address,
+        avatarUrl: data.avatarUrl,
+        currentPosition: data.currentPosition,
+        summary: data.summary,
+        objective: data.objective,
         userId,
-        isMain: existingCVs === 0, // CV đầu tiên sẽ là CV chính
+        isMain: existingCVs === 0 || data.isMain, // CV đầu tiên sẽ là CV chính
+        embedding: [], // TODO: Generate embedding using AI service
       },
     });
 
@@ -48,7 +58,7 @@ export class CVService {
     // Kiểm tra quyền sở hữu
     const existingCV = await this.getCVById(cvId, userId);
     if (!existingCV) {
-      throw new Error('CV not found or access denied');
+      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
     }
 
     // Nếu đặt làm CV chính, bỏ CV chính cũ
@@ -59,12 +69,24 @@ export class CVService {
       });
     }
 
+    const updateData: any = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.fullName !== undefined) updateData.fullName = data.fullName;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.phoneNumber !== undefined) updateData.phoneNumber = data.phoneNumber;
+    if (data.dateOfBirth !== undefined) updateData.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+    if (data.gender !== undefined) updateData.gender = data.gender as any;
+    if (data.nationality !== undefined) updateData.nationality = data.nationality;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+    if (data.currentPosition !== undefined) updateData.currentPosition = data.currentPosition;
+    if (data.summary !== undefined) updateData.summary = data.summary;
+    if (data.objective !== undefined) updateData.objective = data.objective;
+    if (data.isMain !== undefined) updateData.isMain = data.isMain;
+
     return await prisma.cV.update({
       where: { id: cvId },
-      data: {
-        ...data,
-        updatedAt: new Date()
-      }
+      data: updateData
     });
   }
 
@@ -73,7 +95,7 @@ export class CVService {
     // Kiểm tra CV có tồn tại và thuộc về user
     const cv = await this.getCVById(data.cvId, userId);
     if (!cv) {
-      throw new Error('CV not found or access denied');
+      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
     }
 
     // Bỏ CV chính cũ
@@ -94,7 +116,7 @@ export class CVService {
     // Kiểm tra quyền sở hữu
     const cv = await this.getCVById(cvId, userId);
     if (!cv) {
-      throw new Error('CV not found or access denied');
+      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
     }
 
     // Nếu đây là CV chính, đặt CV khác làm chính (nếu có)
@@ -125,17 +147,52 @@ export class CVService {
     });
   }
 
-  // Download CV (trả về thông tin file)
-  async downloadCV(cvId: string, userId: string) {
+  // Generate CV embedding (for AI recommendations)
+  async generateEmbedding(cvId: string, userId: string) {
     const cv = await this.getCVById(cvId, userId);
     if (!cv) {
-      throw new Error('CV not found or access denied');
+      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
     }
 
-    return {
-      fileName: cv.fileName,
-      fileUrl: cv.fileUrl,
-      fileSize: cv.fileSize
-    };
+    // TODO: Call AI service to generate embedding
+    // For now, return empty array
+    const embedding: number[] = [];
+    
+    return await prisma.cV.update({
+      where: { id: cvId },
+      data: { 
+        embedding,
+        lastGeneratedAt: new Date()
+      }
+    });
+  }
+
+  // Get CV with all related data
+  async getCVWithDetails(cvId: string, userId: string) {
+    const cv = await this.getCVById(cvId, userId);
+    if (!cv) {
+      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
+    }
+
+    return await prisma.cV.findUnique({
+      where: { id: cvId },
+      include: {
+        workExperience: true,
+        education: true,
+        languages: true,
+        certifications: true,
+        projects: true,
+        achievements: true,
+        references: true,
+        skills: true,
+        activities: true,
+        socialMedia: {
+          where: {
+            ownerType: 'CV',
+            ownerId: cvId
+          }
+        }
+      }
+    });
   }
 }
