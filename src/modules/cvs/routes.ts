@@ -22,5 +22,11 @@ router.use('/:cvId/work-experience', require('./work-experience/routes.js').defa
 router.use('/:cvId/education', require('./education/routes.js').default);
 router.use('/:cvId/languages', require('./languages/routes.js').default);
 router.use('/:cvId/skills', require('./skills/routes.js').default);
+router.use('/:cvId/certifications', require('./certifications/routes.js').default);
+router.use('/:cvId/projects', require('./projects/routes.js').default);
+router.use('/:cvId/achievements', require('./achievements/routes.js').default);
+router.use('/:cvId/references', require('./references/routes.js').default);
+router.use('/:cvId/activities', require('./activities/routes.js').default);
+router.use('/:cvId/social-media', require('./social-media/routes.js').default);
 
 export default router;

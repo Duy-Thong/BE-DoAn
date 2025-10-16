@@ -1,109 +1,31 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middlewares/auth.js';
-import { prisma } from '../../loaders/prisma.js';
+import { SavedJobController } from './controller.js';
 
 export const savedJobsRouter = Router();
+const savedJobController = new SavedJobController();
 
-savedJobsRouter.get('/', requireAuth, async (req, res) => {
-  try {
-    const items = await prisma.savedJob.findMany({ 
-      where: { userId: req.user!.id }, 
-      include: { 
-        job: {
-          include: {
-            company: {
-              select: {
-                name: true,
-                logoUrl: true,
-                isVerified: true
-              }
-            },
-            _count: {
-              select: {
-                applications: true,
-                views: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json({ 
-      success: true,
-      data: items 
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Không thể lấy danh sách công việc đã lưu'
-    });
-  }
-});
+// Protected routes
+savedJobsRouter.use(requireAuth);
 
-savedJobsRouter.post('/:jobId', requireAuth, async (req, res) => {
-  try {
-    // Kiểm tra job tồn tại
-    const job = await prisma.job.findFirst({
-      where: {
-        id: req.params.jobId!,
-        isActive: true,
-        isApproved: true
-      }
-    });
+// Get user's saved jobs
+savedJobsRouter.get('/', savedJobController.getSavedJobs.bind(savedJobController));
 
-    if (!job) {
-      return res.status(404).json({
-        success: false,
-        error: 'Công việc không tìm thấy hoặc không còn hoạt động'
-      });
-    }
+// Save a job
+savedJobsRouter.post('/', savedJobController.createSavedJob.bind(savedJobController));
 
-    const item = await prisma.savedJob.upsert({
-      where: { userId_jobId: { userId: req.user!.id, jobId: req.params.jobId! } },
-      update: {},
-      create: { userId: req.user!.id, jobId: req.params.jobId! },
-      include: {
-        job: {
-          include: {
-            company: {
-              select: {
-                name: true,
-                logoUrl: true,
-                isVerified: true
-              }
-            }
-          }
-        }
-      }
-    });
-    res.status(201).json({ 
-      success: true,
-      data: item,
-      message: 'Đã lưu công việc thành công'
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: 'Không thể lưu công việc'
-    });
-  }
-});
+// Get saved job by ID
+savedJobsRouter.get('/:id', savedJobController.getSavedJobById.bind(savedJobController));
 
-savedJobsRouter.delete('/:jobId', requireAuth, async (req, res) => {
-  try {
-    await prisma.savedJob.delete({ 
-      where: { userId_jobId: { userId: req.user!.id, jobId: req.params.jobId! } } 
-    });
-    res.json({
-      success: true,
-      message: 'Đã bỏ lưu công việc thành công'
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: 'Không thể bỏ lưu công việc'
-    });
-  }
-});
+// Remove a saved job
+savedJobsRouter.delete('/:id', savedJobController.deleteSavedJob.bind(savedJobController));
+
+// Remove a saved job by job ID
+savedJobsRouter.delete('/job/:jobId', savedJobController.deleteSavedJobByJobId.bind(savedJobController));
+
+// Check if job is saved
+savedJobsRouter.get('/check/:jobId', savedJobController.isJobSaved.bind(savedJobController));
+
+// Get saved job count
+savedJobsRouter.get('/stats/count', savedJobController.getSavedJobCount.bind(savedJobController));
 
