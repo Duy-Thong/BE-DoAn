@@ -40,9 +40,18 @@ export const UserQueryDto = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().optional(),
   role: z.nativeEnum(UserRole).optional(),
-  isActive: z.coerce.boolean().optional(),
-  isLocked: z.coerce.boolean().optional(),
-  isEmailVerified: z.coerce.boolean().optional(),
+  isActive: z.string().optional().transform(val => {
+    if (val === '' || val === undefined || val === null) return undefined;
+    return val === 'true';
+  }),
+  isLocked: z.string().optional().transform(val => {
+    if (val === '' || val === undefined || val === null) return undefined;
+    return val === 'true';
+  }),
+  isEmailVerified: z.string().optional().transform(val => {
+    if (val === '' || val === undefined || val === null) return undefined;
+    return val === 'true';
+  }),
   companyId: z.string().optional(),
   sortBy: z.enum(['createdAt', 'updatedAt', 'fullName', 'email']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),

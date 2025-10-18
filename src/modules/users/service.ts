@@ -43,8 +43,8 @@ export class UsersService {
 
     const where: Prisma.UserWhereInput = {};
 
-    // Apply search filter
-    if (search) {
+    // Apply search filter (only if not empty string)
+    if (search && search.trim() !== '') {
       const sanitizedSearch = ValidationUtils.validateSearchQuery(search);
       where.OR = [
         { email: { contains: sanitizedSearch, mode: 'insensitive' } },
@@ -53,7 +53,7 @@ export class UsersService {
       ];
     }
 
-    // Apply other filters
+    // Apply other filters (DTO đã xử lý empty strings thành undefined)
     if (role !== undefined) where.role = role;
     if (isActive !== undefined) where.isActive = isActive;
     if (isLocked !== undefined) where.isLocked = isLocked;
