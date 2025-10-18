@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { CompanySocialMediaController } from './controller.js';
-import { authMiddleware } from '../../../middlewares/auth.js';
 
 const router = Router({ mergeParams: true });
 const controller = new CompanySocialMediaController();
 
-router.use(authMiddleware);
+// NOTE: Auth middleware already applied in parent router (companies/routes.ts)
 
 router.post('/', controller.create.bind(controller));
 router.get('/', controller.list.bind(controller));

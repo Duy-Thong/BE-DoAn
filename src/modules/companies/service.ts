@@ -1,6 +1,6 @@
 import { Prisma, CompanyRole } from '../../generated/prisma/index.js';
 import { prisma } from '../../loaders/prisma.js';
-import { AppError } from '../../utils/error.js';
+import { AppError, createNotFoundError, createConflictError } from '../../utils/error.js';
 import type { CreateCompanyDto, UpdateCompanyDto, CompanyQueryDto } from './dto.js';
 
 export class CompaniesService {
@@ -152,7 +152,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new AppError('Công ty không tồn tại', 404);
+      throw createNotFoundError('Công ty');
     }
 
     return company;
@@ -218,7 +218,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new AppError('Công ty không tồn tại', 404);
+      throw createNotFoundError('Công ty');
     }
 
     await prisma.company.delete({
@@ -252,7 +252,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new AppError('Công ty không tồn tại', 404);
+      throw createNotFoundError('Công ty');
     }
 
     const skip = (page - 1) * limit;
@@ -301,7 +301,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new AppError('Công ty không tồn tại', 404);
+      throw createNotFoundError('Công ty');
     }
 
     const skip = (page - 1) * limit;
@@ -340,16 +340,16 @@ export class CompaniesService {
   async assignUser(companyId: string, userId: string, companyRole: CompanyRole = CompanyRole.VIEWER) {
     const company = await prisma.company.findUnique({ where: { id: companyId } });
     if (!company) {
-      throw new AppError('Công ty không tồn tại', 404);
+      throw createNotFoundError('Công ty');
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new AppError('Người dùng không tồn tại', 404);
+      throw createNotFoundError('Người dùng');
     }
 
     if (user.companyId) {
-      throw new AppError('Người dùng đã thuộc về một công ty khác', 400);
+      throw createConflictError('Người dùng đã thuộc về một công ty khác');
     }
 
     return prisma.user.update({
@@ -366,7 +366,7 @@ export class CompaniesService {
   async removeUser(companyId: string, userId: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.companyId !== companyId) {
-      throw new AppError('Người dùng không thuộc về công ty này', 400);
+      throw createConflictError('Người dùng không thuộc về công ty này');
     }
 
     return prisma.user.update({
@@ -383,7 +383,7 @@ export class CompaniesService {
   async updateUserRole(companyId: string, userId: string, companyRole: CompanyRole) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.companyId !== companyId) {
-      throw new AppError('Người dùng không thuộc về công ty này', 400);
+      throw createConflictError('Người dùng không thuộc về công ty này');
     }
 
     return prisma.user.update({

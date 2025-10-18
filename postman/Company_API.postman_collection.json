@@ -1,0 +1,551 @@
+{
+  "info": {
+    "name": "Company API",
+    "description": "API collection for Company module with auto-save variables",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Public APIs",
+      "item": [
+        {
+          "name": "List Companies",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save first company ID if exists",
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
+                  "        pm.collectionVariables.set('companyId', jsonData.data[0].id);",
+                  "        console.log('✅ Saved companyId:', jsonData.data[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"},
+                {"key": "search", "value": "", "disabled": true},
+                {"key": "industry", "value": "", "disabled": true},
+                {"key": "companySize", "value": "", "disabled": true},
+                {"key": "isVerified", "value": "", "disabled": true},
+                {"key": "sortBy", "value": "createdAt", "disabled": true},
+                {"key": "sortOrder", "value": "desc", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Company by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Verify company data",
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    console.log('✅ Company:', jsonData.data.name);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Get Company Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/jobs?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "jobs"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"}
+              ],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Company CRUD (Auth Required)",
+      "item": [
+        {
+          "name": "Create Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save company ID from response",
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.collectionVariables.set('companyId', jsonData.data.id);",
+                  "        console.log('✅ Created and saved companyId:', jsonData.data.id);",
+                  "        console.log('✅ Company name:', jsonData.data.name);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tech Company Inc.\",\n  \"website\": \"https://techcompany.com\",\n  \"description\": \"A leading technology company\",\n  \"industry\": \"Technology\",\n  \"companySize\": \"MEDIUM\",\n  \"foundedYear\": 2015,\n  \"address\": \"123 Tech Street, San Francisco\",\n  \"phone\": \"+1-555-0123\",\n  \"email\": \"contact@techcompany.com\",\n  \"logoUrl\": \"https://example.com/logo.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies"]
+            }
+          }
+        },
+        {
+          "name": "Update Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    console.log('✅ Updated company:', jsonData.data.name);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tech Company Inc. (Updated)\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Delete Company",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Company Status Management (Admin)",
+      "item": [
+        {
+          "name": "Verify Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "verify"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Unverify Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/unverify",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "unverify"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Activate Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "activate"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "deactivate"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User/Member Management",
+      "item": [
+        {
+          "name": "Get Company Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save first user ID if exists",
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
+                  "        pm.collectionVariables.set('userId', jsonData.data[0].id);",
+                  "        console.log('✅ Saved userId:', jsonData.data[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "users"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"}
+              ],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Add User to Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    console.log('✅ Added user to company');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"companyRole\": \"MEMBER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "users"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Update User Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyRole\": \"MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/users/:userId/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "users", ":userId", "role"],
+              "variable": [
+                {"key": "companyId", "value": "{{companyId}}"},
+                {"key": "userId", "value": "{{userId}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove User from Company",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/users/:userId",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "users", ":userId"],
+              "variable": [
+                {"key": "companyId", "value": "{{companyId}}"},
+                {"key": "userId", "value": "{{userId}}"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social Media",
+      "item": [
+        {
+          "name": "List Social Media Links",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/social-media",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "social-media"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Add Social Media Link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save social media ID",
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.collectionVariables.set('socialMediaId', jsonData.data.id);",
+                  "        console.log('✅ Saved socialMediaId:', jsonData.data.id);",
+                  "        console.log('✅ Platform:', jsonData.data.platform);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"LINKEDIN\",\n  \"url\": \"https://linkedin.com/company/techcompany\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/social-media",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "social-media"],
+              "variable": [{"key": "companyId", "value": "{{companyId}}"}]
+            }
+          }
+        },
+        {
+          "name": "Get Social Media Link",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/social-media/:socialMediaId",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "social-media", ":socialMediaId"],
+              "variable": [
+                {"key": "companyId", "value": "{{companyId}}"},
+                {"key": "socialMediaId", "value": "{{socialMediaId}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Social Media Link",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"LINKEDIN\",\n  \"url\": \"https://linkedin.com/company/techcompany-updated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/social-media/:socialMediaId",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "social-media", ":socialMediaId"],
+              "variable": [
+                {"key": "companyId", "value": "{{companyId}}"},
+                {"key": "socialMediaId", "value": "{{socialMediaId}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Social Media Link",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/:companyId/social-media/:socialMediaId",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", ":companyId", "social-media", ":socialMediaId"],
+              "variable": [
+                {"key": "companyId", "value": "{{companyId}}"},
+                {"key": "socialMediaId", "value": "{{socialMediaId}}"}
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('🚀 Request:', pm.info.requestName);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script - runs after every request",
+          "const statusCode = pm.response.code;",
+          "",
+          "// Log response status",
+          "if (statusCode >= 200 && statusCode < 300) {",
+          "    console.log('✅ Success:', statusCode);",
+          "} else if (statusCode >= 400 && statusCode < 500) {",
+          "    console.log('❌ Client Error:', statusCode);",
+          "    console.log('Response:', pm.response.json());",
+          "} else if (statusCode >= 500) {",
+          "    console.log('🔥 Server Error:', statusCode);",
+          "    console.log('Response:', pm.response.json());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "companyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "socialMediaId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

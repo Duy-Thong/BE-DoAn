@@ -1,8 +1,15 @@
 import { prisma } from '../../../loaders/prisma.js';
 import { CreateCompanySocialMediaDto, UpdateCompanySocialMediaDto } from './dto.js';
+import { createNotFoundError } from '../../../utils/error.js';
 
 export class CompanySocialMediaService {
   async createCompanySocialMedia(companyId: string, data: CreateCompanySocialMediaDto) {
+    // Verify company exists
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) {
+      throw createNotFoundError('Công ty');
+    }
+
     return prisma.socialMedia.create({
       data: {
         ...data,
@@ -13,10 +20,16 @@ export class CompanySocialMediaService {
   }
 
   async getCompanySocialMedias(companyId: string) {
+    // Verify company exists
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) {
+      throw createNotFoundError('Công ty');
+    }
+
     return prisma.socialMedia.findMany({
-      where: { 
+      where: {
         ownerType: 'COMPANY',
-        ownerId: companyId 
+        ownerId: companyId
       },
       orderBy: { platform: 'asc' },
     });
@@ -24,10 +37,10 @@ export class CompanySocialMediaService {
 
   async getCompanySocialMediaById(companyId: string, id: string) {
     return prisma.socialMedia.findFirst({
-      where: { 
-        id, 
+      where: {
+        id,
         ownerType: 'COMPANY',
-        ownerId: companyId 
+        ownerId: companyId
       },
     });
   }
@@ -35,7 +48,7 @@ export class CompanySocialMediaService {
   async updateCompanySocialMedia(companyId: string, id: string, data: UpdateCompanySocialMediaDto) {
     const existing = await this.getCompanySocialMediaById(companyId, id);
     if (!existing) {
-      throw new Error('CompanySocialMedia not found or access denied');
+      throw createNotFoundError('Mạng xã hội');
     }
 
     return prisma.socialMedia.update({
@@ -47,7 +60,7 @@ export class CompanySocialMediaService {
   async deleteCompanySocialMedia(companyId: string, id: string) {
     const existing = await this.getCompanySocialMediaById(companyId, id);
     if (!existing) {
-      throw new Error('CompanySocialMedia not found or access denied');
+      throw createNotFoundError('Mạng xã hội');
     }
 
     return prisma.socialMedia.delete({

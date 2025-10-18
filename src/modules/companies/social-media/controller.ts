@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { CompanySocialMediaService } from './service.js';
 import { createCompanySocialMediaDto, updateCompanySocialMediaDto } from './dto.js';
+import { ResponseUtils } from '../../../utils/response.js';
+import { AppError } from '../../../utils/error.js';
+import { ErrorCode } from '../../../utils/error-codes.js';
 
 const service = new CompanySocialMediaService();
 
@@ -10,16 +13,17 @@ export class CompanySocialMediaController {
       const { companyId } = req.params;
       const data = createCompanySocialMediaDto.parse(req.body);
       const socialMedia = await service.createCompanySocialMedia(companyId, data);
-      res.status(201).json({ 
-        success: true,
-        data: socialMedia,
-        message: 'Tạo mạng xã hội công ty thành công'
-      });
+      return ResponseUtils.created(res, socialMedia, 'Thêm mạng xã hội thành công');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Không thể tạo mạng xã hội công ty'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi thêm mạng xã hội');
     }
   }
 
@@ -27,15 +31,12 @@ export class CompanySocialMediaController {
     try {
       const { companyId } = req.params;
       const socialMedias = await service.getCompanySocialMedias(companyId);
-      res.json({ 
-        success: true,
-        data: socialMedias 
-      });
+      return ResponseUtils.success(res, socialMedias);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Không thể lấy danh sách mạng xã hội công ty'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi lấy danh sách mạng xã hội');
     }
   }
 
@@ -44,20 +45,14 @@ export class CompanySocialMediaController {
       const { companyId, id } = req.params;
       const socialMedia = await service.getCompanySocialMediaById(companyId, id);
       if (!socialMedia) {
-        return res.status(404).json({ 
-          success: false,
-          error: 'Mạng xã hội công ty không tìm thấy' 
-        });
+        return ResponseUtils.notFound(res, 'Mạng xã hội không tồn tại');
       }
-      res.json({ 
-        success: true,
-        data: socialMedia 
-      });
+      return ResponseUtils.success(res, socialMedia);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Không thể lấy thông tin mạng xã hội công ty'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi lấy thông tin mạng xã hội');
     }
   }
 
@@ -66,16 +61,17 @@ export class CompanySocialMediaController {
       const { companyId, id } = req.params;
       const data = updateCompanySocialMediaDto.parse(req.body);
       const socialMedia = await service.updateCompanySocialMedia(companyId, id, data);
-      res.json({ 
-        success: true,
-        data: socialMedia,
-        message: 'Cập nhật mạng xã hội công ty thành công'
-      });
+      return ResponseUtils.success(res, socialMedia, 'Cập nhật mạng xã hội thành công');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Không thể cập nhật mạng xã hội công ty'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi cập nhật mạng xã hội');
     }
   }
 
@@ -83,15 +79,12 @@ export class CompanySocialMediaController {
     try {
       const { companyId, id } = req.params;
       await service.deleteCompanySocialMedia(companyId, id);
-      res.json({
-        success: true,
-        message: 'Xóa mạng xã hội công ty thành công'
-      });
+      return ResponseUtils.success(res, null, 'Xóa mạng xã hội thành công');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Không thể xóa mạng xã hội công ty'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi xóa mạng xã hội');
     }
   }
 }

@@ -1,46 +1,36 @@
 import { Router } from 'express';
 import { AuthMiddleware } from '../../middlewares/auth.js';
-import {
-  listCompanies,
-  createCompany,
-  getCompany,
-  updateCompany,
-  deleteCompany,
-  verifyCompany,
-  unverifyCompany,
-  activateCompany,
-  deactivateCompany,
-  getCompanyJobs,
-  getCompanyUsers,
-  assignUserToCompany,
-  removeUserFromCompany,
-  updateUserRole,
-} from './controller.js';
+import { CompaniesController } from './controller.js';
+import socialMediaRoutes from './social-media/routes.js';
 
 export const companiesRouter = Router();
+const controller = new CompaniesController();
 
 // Public routes - Anyone can view
-companiesRouter.get('/', listCompanies);
-companiesRouter.get('/:id', getCompany);
-companiesRouter.get('/:id/jobs', getCompanyJobs);
+companiesRouter.get('/', controller.list.bind(controller));
+companiesRouter.get('/:id', controller.getById.bind(controller));
+companiesRouter.get('/:id/jobs', controller.getJobs.bind(controller));
 
 // Protected routes - Require authentication
 companiesRouter.use(AuthMiddleware.authenticate);
 
 // CRUD routes
-companiesRouter.post('/', AuthMiddleware.requireRecruiterOrAdmin, createCompany);
-companiesRouter.put('/:id', AuthMiddleware.requireRecruiterOrAdmin, updateCompany);
-companiesRouter.delete('/:id', AuthMiddleware.requireAdmin, deleteCompany);
+companiesRouter.post('/', AuthMiddleware.requireRecruiterOrAdmin, controller.create.bind(controller));
+companiesRouter.put('/:id', AuthMiddleware.requireRecruiterOrAdmin, controller.update.bind(controller));
+companiesRouter.delete('/:id', AuthMiddleware.requireAdmin, controller.remove.bind(controller));
 
 // Admin routes - Company status management
-companiesRouter.post('/:id/verify', AuthMiddleware.requireAdmin, verifyCompany);
-companiesRouter.post('/:id/unverify', AuthMiddleware.requireAdmin, unverifyCompany);
-companiesRouter.post('/:id/activate', AuthMiddleware.requireAdmin, activateCompany);
-companiesRouter.post('/:id/deactivate', AuthMiddleware.requireAdmin, deactivateCompany);
+companiesRouter.post('/:id/verify', AuthMiddleware.requireAdmin, controller.verify.bind(controller));
+companiesRouter.post('/:id/unverify', AuthMiddleware.requireAdmin, controller.unverify.bind(controller));
+companiesRouter.post('/:id/activate', AuthMiddleware.requireAdmin, controller.activate.bind(controller));
+companiesRouter.post('/:id/deactivate', AuthMiddleware.requireAdmin, controller.deactivate.bind(controller));
 
 // Member management
-companiesRouter.get('/:id/users', getCompanyUsers);
-companiesRouter.post('/:id/users', AuthMiddleware.requireRecruiterOrAdmin, assignUserToCompany);
-companiesRouter.put('/:id/users/:userId/role', AuthMiddleware.requireRecruiterOrAdmin, updateUserRole);
-companiesRouter.delete('/:id/users/:userId', AuthMiddleware.requireRecruiterOrAdmin, removeUserFromCompany);
+companiesRouter.get('/:id/users', controller.getUsers.bind(controller));
+companiesRouter.post('/:id/users', AuthMiddleware.requireRecruiterOrAdmin, controller.assignUser.bind(controller));
+companiesRouter.put('/:id/users/:userId/role', AuthMiddleware.requireRecruiterOrAdmin, controller.updateUserRole.bind(controller));
+companiesRouter.delete('/:id/users/:userId', AuthMiddleware.requireRecruiterOrAdmin, controller.removeUser.bind(controller));
+
+// Social Media nested routes
+companiesRouter.use('/:companyId/social-media', socialMediaRoutes);
 
