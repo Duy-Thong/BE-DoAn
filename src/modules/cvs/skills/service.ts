@@ -1,7 +1,10 @@
 import { prisma } from '../../../loaders/prisma.js';
 import { CreateCVSkillDto, UpdateCVSkillDto } from './dto.js';
+import { BaseCVService } from '../base-cv-service.js';
+import { createNotFoundError, createConflictError } from '../../../utils/error.js';
+import { SkillLevel } from '../enums.js';
 
-export class CVSkillService {
+export class CVSkillService extends BaseCVService {
   // Tạo kỹ năng mới
   async createCVSkill(cvId: string, userId: string, data: CreateCVSkillDto) {
     // Kiểm tra CV thuộc về user
@@ -18,13 +21,13 @@ export class CVSkillService {
     });
 
     if (existingSkill) {
-      throw new Error('Kỹ năng này đã tồn tại trong CV');
+      throw createConflictError('Kỹ năng này đã tồn tại trong CV');
     }
 
     return await prisma.cVSkill.create({
       data: {
         skillName: data.skillName,
-        level: data.level as any,
+        level: data.level as SkillLevel,
         yearsOfExperience: data.yearsOfExperience,
         description: data.description,
         cvId
@@ -67,7 +70,7 @@ export class CVSkillService {
     // Kiểm tra kỹ năng tồn tại
     const skill = await this.getCVSkillById(skillId, cvId, userId);
     if (!skill) {
-      throw new Error('Kỹ năng không tìm thấy');
+      throw createNotFoundError('Kỹ năng');
     }
 
     // Nếu thay đổi tên kỹ năng, kiểm tra trùng lặp
@@ -81,14 +84,14 @@ export class CVSkillService {
         }
       });
 
-      if (existingSkill) {
-        throw new Error('Kỹ năng này đã tồn tại trong CV');
-      }
+    if (existingSkill) {
+      throw createConflictError('Kỹ năng này đã tồn tại trong CV');
+    }
     }
 
     const updateData: any = {};
     if (data.skillName !== undefined) updateData.skillName = data.skillName;
-    if (data.level !== undefined) updateData.level = data.level as any;
+    if (data.level !== undefined) updateData.level = data.level as SkillLevel;
     if (data.yearsOfExperience !== undefined) updateData.yearsOfExperience = data.yearsOfExperience;
     if (data.description !== undefined) updateData.description = data.description;
 
@@ -106,7 +109,7 @@ export class CVSkillService {
     // Kiểm tra kỹ năng tồn tại
     const skill = await this.getCVSkillById(skillId, cvId, userId);
     if (!skill) {
-      throw new Error('Kỹ năng không tìm thấy');
+      throw createNotFoundError('Kỹ năng');
     }
 
     return await prisma.cVSkill.delete({
@@ -114,19 +117,4 @@ export class CVSkillService {
     });
   }
 
-  // Kiểm tra CV thuộc về user
-  private async verifyCVOwnership(cvId: string, userId: string) {
-    const cv = await prisma.cV.findFirst({
-      where: {
-        id: cvId,
-        userId
-      }
-    });
-
-    if (!cv) {
-      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
-    }
-
-    return cv;
-  }
 }

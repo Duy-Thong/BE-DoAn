@@ -1,6 +1,7 @@
 import { prisma } from '../../loaders/prisma.js';
 import { CreateCVDto, UpdateCVDto, SetMainCVDto } from './dto.js';
 import { createNotFoundError, createAuthError } from '../../utils/error.js';
+import { Gender } from './enums.js';
 
 export class CVService {
   // Tạo CV mới
@@ -17,7 +18,7 @@ export class CVService {
         email: data.email,
         phoneNumber: data.phoneNumber,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
-        gender: data.gender as any,
+        gender: data.gender as Gender,
         nationality: data.nationality,
         address: data.address,
         avatarUrl: data.avatarUrl,
@@ -76,7 +77,7 @@ export class CVService {
     if (data.email !== undefined) updateData.email = data.email;
     if (data.phoneNumber !== undefined) updateData.phoneNumber = data.phoneNumber;
     if (data.dateOfBirth !== undefined) updateData.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
-    if (data.gender !== undefined) updateData.gender = data.gender as any;
+    if (data.gender !== undefined) updateData.gender = data.gender as Gender;
     if (data.nationality !== undefined) updateData.nationality = data.nationality;
     if (data.address !== undefined) updateData.address = data.address;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
@@ -91,53 +92,69 @@ export class CVService {
     });
   }
 
-  // Đặt CV làm CV chính
+  // Đặt CV làm CV chính với transaction
   async setMainCV(userId: string, data: SetMainCVDto) {
-    // Kiểm tra CV có tồn tại và thuộc về user
-    const cv = await this.getCVById(data.cvId, userId);
-    if (!cv) {
-      throw createNotFoundError('CV');
-    }
+    return await prisma.$transaction(async (tx) => {
+      // Kiểm tra CV có tồn tại và thuộc về user
+      const cv = await tx.cV.findFirst({
+        where: {
+          id: data.cvId,
+          userId
+        }
+      });
+      
+      if (!cv) {
+        throw createNotFoundError('CV');
+      }
 
-    // Bỏ CV chính cũ
-    await prisma.cV.updateMany({
-      where: { userId, isMain: true },
-      data: { isMain: false }
-    });
+      // Bỏ CV chính cũ
+      await tx.cV.updateMany({
+        where: { userId, isMain: true },
+        data: { isMain: false }
+      });
 
-    // Đặt CV mới làm chính
-    return await prisma.cV.update({
-      where: { id: data.cvId },
-      data: { isMain: true }
+      // Đặt CV mới làm chính
+      return await tx.cV.update({
+        where: { id: data.cvId },
+        data: { isMain: true }
+      });
     });
   }
 
-  // Xóa CV
+  // Xóa CV với transaction
   async deleteCV(cvId: string, userId: string) {
-    // Kiểm tra quyền sở hữu
-    const cv = await this.getCVById(cvId, userId);
-    if (!cv) {
-      throw createNotFoundError('CV');
-    }
-
-    // Nếu đây là CV chính, đặt CV khác làm chính (nếu có)
-    if (cv.isMain) {
-      const otherCVs = await prisma.cV.findMany({
-        where: { userId, id: { not: cvId } },
-        orderBy: { createdAt: 'desc' },
-        take: 1
+    return await prisma.$transaction(async (tx) => {
+      // Kiểm tra quyền sở hữu
+      const cv = await tx.cV.findFirst({
+        where: {
+          id: cvId,
+          userId
+        }
       });
-
-      if (otherCVs.length > 0) {
-        await prisma.cV.update({
-          where: { id: otherCVs[0].id },
-          data: { isMain: true }
-        });
+      
+      if (!cv) {
+        throw createNotFoundError('CV');
       }
-    }
 
-    return await prisma.cV.delete({
-      where: { id: cvId }
+      // Nếu đây là CV chính, đặt CV khác làm chính (nếu có)
+      if (cv.isMain) {
+        const otherCVs = await tx.cV.findMany({
+          where: { userId, id: { not: cvId } },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        });
+
+        if (otherCVs.length > 0) {
+          await tx.cV.update({
+            where: { id: otherCVs[0].id },
+            data: { isMain: true }
+          });
+        }
+      }
+
+      return await tx.cV.delete({
+        where: { id: cvId }
+      });
     });
   }
 

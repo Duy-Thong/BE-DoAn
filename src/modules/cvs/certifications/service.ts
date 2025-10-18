@@ -1,8 +1,13 @@
 import { prisma } from '../../../loaders/prisma.js';
 import { CreateCertificationDto, UpdateCertificationDto } from './dto.js';
+import { BaseCVService } from '../base-cv-service.js';
+import { createNotFoundError } from '../../../utils/error.js';
 
-export class CertificationService {
-  async createCertification(cvId: string, data: CreateCertificationDto) {
+export class CertificationService extends BaseCVService {
+  async createCertification(cvId: string, userId: string, data: CreateCertificationDto) {
+    // Kiểm tra CV thuộc về user
+    await this.verifyCVOwnership(cvId, userId);
+
     return prisma.certification.create({
       data: {
         ...data,
@@ -13,23 +18,29 @@ export class CertificationService {
     });
   }
 
-  async getCertifications(cvId: string) {
+  async getCertifications(cvId: string, userId: string) {
+    // Kiểm tra CV thuộc về user
+    await this.verifyCVOwnership(cvId, userId);
+
     return prisma.certification.findMany({
       where: { cvId },
       orderBy: { issueDate: 'desc' },
     });
   }
 
-  async getCertificationById(cvId: string, id: string) {
+  async getCertificationById(cvId: string, id: string, userId: string) {
+    // Kiểm tra CV thuộc về user
+    await this.verifyCVOwnership(cvId, userId);
+
     return prisma.certification.findFirst({
       where: { id, cvId },
     });
   }
 
-  async updateCertification(cvId: string, id: string, data: UpdateCertificationDto) {
-    const existing = await this.getCertificationById(cvId, id);
+  async updateCertification(cvId: string, id: string, userId: string, data: UpdateCertificationDto) {
+    const existing = await this.getCertificationById(cvId, id, userId);
     if (!existing) {
-      throw new Error('Certification not found or access denied');
+      throw createNotFoundError('Chứng chỉ');
     }
 
     return prisma.certification.update({
@@ -42,10 +53,10 @@ export class CertificationService {
     });
   }
 
-  async deleteCertification(cvId: string, id: string) {
-    const existing = await this.getCertificationById(cvId, id);
+  async deleteCertification(cvId: string, id: string, userId: string) {
+    const existing = await this.getCertificationById(cvId, id, userId);
     if (!existing) {
-      throw new Error('Certification not found or access denied');
+      throw createNotFoundError('Chứng chỉ');
     }
 
     return prisma.certification.delete({

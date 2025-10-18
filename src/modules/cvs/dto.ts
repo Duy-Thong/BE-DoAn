@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Gender } from './enums.js';
 
 export const createCVDto = z.object({
   title: z.string().min(1, 'Tiêu đề CV không được để trống'),
@@ -6,7 +7,7 @@ export const createCVDto = z.object({
   email: z.string().email('Email không hợp lệ'),
   phoneNumber: z.string().optional(),
   dateOfBirth: z.string().datetime().optional(),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']).optional(),
+  gender: z.nativeEnum(Gender).optional(),
   nationality: z.string().optional(),
   address: z.string().optional(),
   avatarUrl: z.string().url().optional(),
@@ -22,7 +23,7 @@ export const updateCVDto = z.object({
   email: z.string().email('Email không hợp lệ').optional(),
   phoneNumber: z.string().optional(),
   dateOfBirth: z.string().datetime().optional(),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']).optional(),
+  gender: z.nativeEnum(Gender).optional(),
   nationality: z.string().optional(),
   address: z.string().optional(),
   avatarUrl: z.string().url().optional(),
@@ -43,7 +44,7 @@ export const CVResponse = z.object({
   email: z.string(),
   phoneNumber: z.string().nullable(),
   dateOfBirth: z.date().nullable(),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']).nullable(),
+  gender: z.nativeEnum(Gender).nullable(),
   nationality: z.string().nullable(),
   address: z.string().nullable(),
   avatarUrl: z.string().nullable(),

@@ -1,8 +1,13 @@
 import { prisma } from '../../../loaders/prisma.js';
 import { CreateEducationDto, UpdateEducationDto } from './dto.js';
+import { BaseCVService } from '../base-cv-service.js';
+import { createNotFoundError } from '../../../utils/error.js';
 
-export class EducationService {
-  async createEducation(cvId: string, data: CreateEducationDto) {
+export class EducationService extends BaseCVService {
+  async createEducation(cvId: string, userId: string, data: CreateEducationDto) {
+    // Kiểm tra CV thuộc về user
+    await this.verifyCVOwnership(cvId, userId);
+
     return prisma.education.create({
       data: {
         ...data,
@@ -13,23 +18,29 @@ export class EducationService {
     });
   }
 
-  async getEducations(cvId: string) {
+  async getEducations(cvId: string, userId: string) {
+    // Kiểm tra CV thuộc về user
+    await this.verifyCVOwnership(cvId, userId);
+
     return prisma.education.findMany({
       where: { cvId },
       orderBy: { startDate: 'desc' },
     });
   }
 
-  async getEducationById(cvId: string, id: string) {
+  async getEducationById(cvId: string, id: string, userId: string) {
+    // Kiểm tra CV thuộc về user
+    await this.verifyCVOwnership(cvId, userId);
+
     return prisma.education.findFirst({
       where: { id, cvId },
     });
   }
 
-  async updateEducation(cvId: string, id: string, data: UpdateEducationDto) {
-    const existing = await this.getEducationById(cvId, id);
+  async updateEducation(cvId: string, id: string, userId: string, data: UpdateEducationDto) {
+    const existing = await this.getEducationById(cvId, id, userId);
     if (!existing) {
-      throw new Error('Education not found or access denied');
+      throw createNotFoundError('Học vấn');
     }
 
     return prisma.education.update({
@@ -42,10 +53,10 @@ export class EducationService {
     });
   }
 
-  async deleteEducation(cvId: string, id: string) {
-    const existing = await this.getEducationById(cvId, id);
+  async deleteEducation(cvId: string, id: string, userId: string) {
+    const existing = await this.getEducationById(cvId, id, userId);
     if (!existing) {
-      throw new Error('Education not found or access denied');
+      throw createNotFoundError('Học vấn');
     }
 
     return prisma.education.delete({

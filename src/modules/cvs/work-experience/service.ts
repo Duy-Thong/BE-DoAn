@@ -1,7 +1,9 @@
 import { prisma } from '../../../loaders/prisma.js';
 import { CreateWorkExperienceDto, UpdateWorkExperienceDto } from './dto.js';
+import { BaseCVService } from '../base-cv-service.js';
+import { createNotFoundError } from '../../../utils/error.js';
 
-export class WorkExperienceService {
+export class WorkExperienceService extends BaseCVService {
   // Tạo kinh nghiệm làm việc mới
   async createWorkExperience(cvId: string, userId: string, data: CreateWorkExperienceDto) {
     // Kiểm tra CV thuộc về user
@@ -51,7 +53,7 @@ export class WorkExperienceService {
     // Kiểm tra work experience tồn tại
     const workExperience = await this.getWorkExperienceById(workExperienceId, cvId, userId);
     if (!workExperience) {
-      throw new Error('Kinh nghiệm làm việc không tìm thấy');
+      throw createNotFoundError('Kinh nghiệm làm việc');
     }
 
     const updateData: any = {};
@@ -75,7 +77,7 @@ export class WorkExperienceService {
     // Kiểm tra work experience tồn tại
     const workExperience = await this.getWorkExperienceById(workExperienceId, cvId, userId);
     if (!workExperience) {
-      throw new Error('Kinh nghiệm làm việc không tìm thấy');
+      throw createNotFoundError('Kinh nghiệm làm việc');
     }
 
     return await prisma.workExperience.delete({
@@ -83,19 +85,4 @@ export class WorkExperienceService {
     });
   }
 
-  // Kiểm tra CV thuộc về user
-  private async verifyCVOwnership(cvId: string, userId: string) {
-    const cv = await prisma.cV.findFirst({
-      where: {
-        id: cvId,
-        userId
-      }
-    });
-
-    if (!cv) {
-      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
-    }
-
-    return cv;
-  }
 }

@@ -1,0 +1,58 @@
+/**
+ * Enums for CV module to improve type safety
+ */
+
+export enum Gender {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  OTHER = 'OTHER',
+  PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY'
+}
+
+export enum SkillLevel {
+  BEGINNER = 'BEGINNER',
+  INTERMEDIATE = 'INTERMEDIATE',
+  ADVANCED = 'ADVANCED',
+  EXPERT = 'EXPERT'
+}
+
+export enum LanguageLevel {
+  BASIC = 'BASIC',
+  CONVERSATIONAL = 'CONVERSATIONAL',
+  PROFESSIONAL = 'PROFESSIONAL',
+  NATIVE = 'NATIVE'
+}
+
+export enum EducationLevel {
+  HIGH_SCHOOL = 'HIGH_SCHOOL',
+  ASSOCIATE = 'ASSOCIATE',
+  BACHELOR = 'BACHELOR',
+  MASTER = 'MASTER',
+  DOCTORATE = 'DOCTORATE',
+  CERTIFICATE = 'CERTIFICATE',
+  DIPLOMA = 'DIPLOMA'
+}
+
+export enum EmploymentType {
+  FULL_TIME = 'FULL_TIME',
+  PART_TIME = 'PART_TIME',
+  CONTRACT = 'CONTRACT',
+  INTERNSHIP = 'INTERNSHIP',
+  FREELANCE = 'FREELANCE',
+  VOLUNTEER = 'VOLUNTEER'
+}
+
+export enum ProjectStatus {
+  PLANNING = 'PLANNING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  ON_HOLD = 'ON_HOLD',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum CertificationStatus {
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
+  PENDING = 'PENDING',
+  REVOKED = 'REVOKED'
+}
