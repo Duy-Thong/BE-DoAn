@@ -89,11 +89,7 @@ export class AuthService {
     // NOTE: Email validation already handled by Zod in DTO
     const email = ValidationUtils.normalizeEmail(data.email);
 
-    // Validate password strength
-    const passwordValidation = ValidationUtils.isValidPassword(data.password);
-    if (!passwordValidation.isValid) {
-      throw createValidationError(passwordValidation.errors);
-    }
+    // Password validation removed - no strength requirements
 
     // Validate phone number if provided
     if (data.phoneNumber && data.phoneNumber.trim()) {
@@ -275,11 +271,7 @@ export class AuthService {
   // RESET PASSWORD
   // ========================================
   async resetPassword(data: ResetPasswordDto) {
-    // Validate password strength
-    const passwordValidation = ValidationUtils.isValidPassword(data.password);
-    if (!passwordValidation.isValid) {
-      throw createValidationError(passwordValidation.errors);
-    }
+    // Password validation removed - no strength requirements
 
     // Verify password reset token
     const tokenResult = AuthUtils.verifyToken(data.token);

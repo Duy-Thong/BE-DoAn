@@ -289,11 +289,7 @@ export class UsersService {
       throw new AppError('Mật khẩu hiện tại không đúng', 400);
     }
 
-    // Validate new password strength
-    const passwordValidation = ValidationUtils.isValidPassword(newPassword);
-    if (!passwordValidation.isValid) {
-      throw new AppError(passwordValidation.errors.join(', '), 400);
-    }
+    // Password validation removed - no strength requirements
 
     // Hash and update new password
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
