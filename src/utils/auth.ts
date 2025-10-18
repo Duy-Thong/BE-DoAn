@@ -95,7 +95,7 @@ export class AuthUtils {
       issuer: options.issuer || 'recruitment-system',
       audience: options.audience || 'recruitment-app'
       // Remove subject option since payload already has 'sub'
-    };
+    } as jwt.SignOptions;
 
     return jwt.sign(tokenPayload, env.JWT_SECRET, tokenOptions);
   }

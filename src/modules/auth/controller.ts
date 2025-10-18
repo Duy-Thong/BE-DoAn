@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AuthService } from './service.js';
 import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto, ResendVerificationDto } from './dto.js';
 import { ResponseUtils } from '../../utils/response.js';
-import { ErrorCodeUtils } from '../../utils/error-codes.js';
+import { ErrorCodeUtils, ErrorCode } from '../../utils/error-codes.js';
 import { AppError } from '../../utils/error.js';
 
 const authService = new AuthService();
@@ -17,7 +17,7 @@ export class AuthController {
       ResponseUtils.success(res, result, 'Login successful');
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code as ErrorCode);
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
       
@@ -43,7 +43,7 @@ export class AuthController {
       console.error('Registration error:', error);
       
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
       
@@ -69,7 +69,7 @@ export class AuthController {
       ResponseUtils.success(res, result, 'Token refreshed successfully');
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
       
@@ -93,7 +93,7 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
       
@@ -117,7 +117,7 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
       
@@ -141,7 +141,7 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
       
@@ -165,7 +165,7 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
 
@@ -188,7 +188,7 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
 

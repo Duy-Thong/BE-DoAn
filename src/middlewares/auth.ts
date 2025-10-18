@@ -9,6 +9,7 @@ import { AuthUtils } from '../utils/auth.js';
 import { ErrorCode, ErrorCodeUtils } from '../utils/error-codes.js';
 import { ResponseUtils } from '../utils/response.js';
 import { AppError } from '../utils/error.js';
+import { UserRole as PrismaUserRole } from '../generated/prisma/index.js';
 
 /**
  * Extended Request Interface with User
@@ -17,7 +18,7 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: string;
+    role: UserRole;
     companyId?: string;
     isActive: boolean;
     isLocked: boolean;
@@ -27,13 +28,10 @@ export interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Role-based Access Control
+ * Role-based Access Control - Use Prisma-generated enum
  */
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  RECRUITER = 'RECRUITER',
-  CANDIDATE = 'CANDIDATE'
-}
+export const UserRole = PrismaUserRole;
+export type UserRole = PrismaUserRole;
 
 /**
  * Company Role-based Access Control
@@ -111,7 +109,15 @@ export class AuthMiddleware {
       }
 
       // Attach user and token to request
-      req.user = user;
+      req.user = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        companyId: user.companyId,
+        isActive: user.isActive,
+        isLocked: user.isLocked,
+        isEmailVerified: user.isEmailVerified
+      };
       req.token = token;
 
       next();
@@ -151,7 +157,15 @@ export class AuthMiddleware {
           });
 
           if (user && user.isActive && !user.isLocked) {
-            req.user = user;
+            req.user = {
+              id: user.id,
+              email: user.email,
+              role: user.role,
+              companyId: user.companyId,
+              isActive: user.isActive,
+              isLocked: user.isLocked,
+              isEmailVerified: user.isEmailVerified
+            };
             req.token = token;
           }
         }
