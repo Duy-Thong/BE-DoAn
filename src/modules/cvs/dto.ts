@@ -64,10 +64,41 @@ export const projectItemDto = z.object({
 export const certificationItemDto = z.object({
   name: z.string().min(1, 'Tên chứng chỉ không được để trống'),
   issuer: z.string().min(1, 'Tổ chức cấp không được để trống'),
-  issueDate: z.string().datetime('Ngày cấp không hợp lệ'),
+  acquiredAt: z.string().datetime('Ngày cấp không hợp lệ'),
   expiryDate: z.string().datetime().optional(),
   credentialId: z.string().optional(),
   credentialUrl: z.string().url().optional(),
+  description: z.string().optional(),
+});
+
+export const languageItemDto = z.object({
+  language: z.string().min(1, 'Tên ngôn ngữ không được để trống'),
+  proficiency: z.enum(['BASIC', 'CONVERSATIONAL', 'PROFESSIONAL', 'NATIVE'], {
+    message: 'Trình độ ngôn ngữ không hợp lệ'
+  }),
+});
+
+export const achievementItemDto = z.object({
+  title: z.string().min(1, 'Tên thành tích không được để trống'),
+  issuer: z.string().min(1, 'Tổ chức cấp không được để trống'),
+  date: z.string().datetime('Ngày cấp không hợp lệ'),
+  description: z.string().optional(),
+});
+
+export const referenceItemDto = z.object({
+  name: z.string().min(1, 'Tên người tham khảo không được để trống'),
+  position: z.string().min(1, 'Chức vụ không được để trống'),
+  company: z.string().min(1, 'Công ty không được để trống'),
+  email: z.string().email('Email không hợp lệ'),
+  phone: z.string().optional(),
+  relationship: z.string().optional(),
+});
+
+export const activityItemDto = z.object({
+  name: z.string().min(1, 'Tên hoạt động không được để trống'),
+  organization: z.string().min(1, 'Tổ chức không được để trống'),
+  startDate: z.string().datetime('Ngày bắt đầu không hợp lệ'),
+  endDate: z.string().datetime().optional(),
   description: z.string().optional(),
 });
 
@@ -94,6 +125,10 @@ export const createCompleteCVDto = z.object({
   skills: z.array(skillItemDto).optional(),
   projects: z.array(projectItemDto).optional(),
   certifications: z.array(certificationItemDto).optional(),
+  languages: z.array(languageItemDto).optional(),
+  achievements: z.array(achievementItemDto).optional(),
+  references: z.array(referenceItemDto).optional(),
+  activities: z.array(activityItemDto).optional(),
 });
 
 // Update CV hoàn chỉnh với nested data
@@ -119,6 +154,10 @@ export const updateCompleteCVDto = z.object({
   skills: z.array(skillItemDto).optional(),
   projects: z.array(projectItemDto).optional(),
   certifications: z.array(certificationItemDto).optional(),
+  languages: z.array(languageItemDto).optional(),
+  achievements: z.array(achievementItemDto).optional(),
+  references: z.array(referenceItemDto).optional(),
+  activities: z.array(activityItemDto).optional(),
 });
 
 export type UpdateCompleteCVDto = z.infer<typeof updateCompleteCVDto>;

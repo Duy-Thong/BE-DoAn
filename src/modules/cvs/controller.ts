@@ -4,6 +4,7 @@ import { updateCompleteCVDto, setMainCVDto, createCompleteCVDto } from './dto.js
 import { ResponseUtils } from '../../utils/response.js';
 import { AppError } from '../../utils/error.js';
 import { ErrorCode } from '../../utils/error-codes.js';
+import { pdfGeneratorService, PDFGenerationOptions, CVWithNestedData } from '../../services/pdf/pdf-generator.service.js';
 
 const cvService = new CVService();
 
@@ -173,25 +174,108 @@ export class CVController {
     }
   }
 
-  // Download CV
+  // Download CV as PDF
   async downloadCV(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
       const { cvId } = req.params;
+      const { template = 'default', format = 'A4' } = req.query;
 
       if (!userId) {
         return ResponseUtils.unauthorized(res);
       }
 
-      const cvData = await cvService.downloadCV(cvId, userId);
+      // Lấy CV data với tất cả nested data
+            const cvData = await cvService.getCVById(cvId, userId) as unknown as CVWithNestedData;
+      if (!cvData) {
+        return ResponseUtils.error(res, 'CV không tồn tại', 404, undefined, ErrorCode.BIZ_CV_NOT_FOUND);
+      }
 
-      return ResponseUtils.success(res, cvData, 'Lấy thông tin CV để tải xuống thành công');
+      // Kiểm tra template có tồn tại không
+      if (!pdfGeneratorService.templateExists(template as string)) {
+        return ResponseUtils.error(res, 'Template không tồn tại', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      // Tạo PDF
+      const pdfOptions: PDFGenerationOptions = {
+        template: template as 'default' | 'modern' | 'harvard',
+        format: format as 'A4' | 'Letter',
+        printBackground: true
+      };
+
+      const pdfBuffer = await pdfGeneratorService.generateCVPDF(cvData, pdfOptions);
+
+      // Set headers cho PDF download
+      const fileName = `${cvData.fullName.replace(/\s+/g, '_')}_CV.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+
+      return res.send(pdfBuffer);
     } catch (error) {
       if (error instanceof AppError) {
         return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
-      return ResponseUtils.internalError(res, 'Lỗi khi tải CV');
+      console.error('PDF Generation Error:', error);
+      return ResponseUtils.internalError(res, 'Lỗi khi tạo PDF');
+    }
+  }
+
+  // Download Main CV as PDF
+  async downloadMainCV(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { template = 'default', format = 'A4' } = req.query;
+
+      if (!userId) {
+        return ResponseUtils.unauthorized(res);
+      }
+
+      // Lấy main CV data
+      const cvData = await cvService.getMainCV(userId) as unknown as CVWithNestedData;
+      if (!cvData) {
+        return ResponseUtils.error(res, 'Không tìm thấy CV chính', 404, undefined, ErrorCode.BIZ_CV_NOT_FOUND);
+      }
+
+      // Kiểm tra template có tồn tại không
+      if (!pdfGeneratorService.templateExists(template as string)) {
+        return ResponseUtils.error(res, 'Template không tồn tại', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      // Tạo PDF
+      const pdfOptions: PDFGenerationOptions = {
+        template: template as 'default' | 'modern' | 'harvard',
+        format: format as 'A4' | 'Letter',
+        printBackground: true
+      };
+
+      const pdfBuffer = await pdfGeneratorService.generateCVPDF(cvData, pdfOptions);
+
+      // Set headers cho PDF download
+      const fileName = `${cvData.fullName.replace(/\s+/g, '_')}_Main_CV.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+
+      return res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      console.error('PDF Generation Error:', error);
+      return ResponseUtils.internalError(res, 'Lỗi khi tạo PDF');
+    }
+  }
+
+  // Get available templates
+  async getTemplates(req: Request, res: Response) {
+    try {
+      const templates = pdfGeneratorService.getAvailableTemplates();
+      return ResponseUtils.success(res, { templates }, 'Lấy danh sách templates thành công');
+    } catch (error) {
+      return ResponseUtils.internalError(res, 'Lỗi khi lấy danh sách templates');
     }
   }
 }

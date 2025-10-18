@@ -107,7 +107,7 @@ export class CVService {
           data: data.certifications.map(cert => ({
             name: cert.name,
             issuer: cert.issuer,
-            acquiredAt: new Date(cert.issueDate), // Schema sử dụng acquiredAt thay vì issueDate
+            acquiredAt: new Date(cert.acquiredAt), // Sửa từ issueDate thành acquiredAt
             description: cert.description,
             cvId: cv.id,
           }))
@@ -301,7 +301,7 @@ export class CVService {
             data: data.certifications.map(cert => ({
               name: cert.name,
               issuer: cert.issuer,
-              acquiredAt: new Date(cert.issueDate),
+              acquiredAt: new Date(cert.acquiredAt),
               description: cert.description,
               cvId: cvId,
             }))

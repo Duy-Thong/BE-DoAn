@@ -12,8 +12,10 @@ router.use(AuthMiddleware.authenticate);
 router.post('/', cvController.createCompleteCV.bind(cvController)); // Chỉ dùng Complete API
 router.get('/', cvController.getUserCVs.bind(cvController));
 router.get('/main', cvController.getMainCV.bind(cvController));
+router.get('/main/download', cvController.downloadMainCV.bind(cvController)); // Download main CV as PDF
+router.get('/templates', cvController.getTemplates.bind(cvController)); // Get available templates
 router.get('/:cvId', cvController.getCVById.bind(cvController));
-router.get('/:cvId/download', cvController.downloadCV.bind(cvController));
+router.get('/:cvId/download', cvController.downloadCV.bind(cvController)); // Download CV as PDF
 router.put('/:cvId', cvController.updateCompleteCV.bind(cvController)); // Chỉ dùng Complete API
 router.delete('/:cvId', cvController.deleteCV.bind(cvController));
 router.post('/set-main', cvController.setMainCV.bind(cvController));
