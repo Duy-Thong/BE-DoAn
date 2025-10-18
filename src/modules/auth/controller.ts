@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { AuthService } from './service.js';
 import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto } from './dto.js';
+import { ResponseUtils } from '../../utils/response.js';
+import { ErrorCodeUtils } from '../../utils/error-codes.js';
+import { AppError } from '../../utils/error.js';
 
 const authService = new AuthService();
 
@@ -11,15 +14,21 @@ export class AuthController {
       const data = LoginDto.parse(req.body);
       const result = await authService.login(data);
 
-      res.json({
-        success: true,
-        data: result
-      });
+      ResponseUtils.success(res, result, 'Login successful');
     } catch (error) {
-      res.status(401).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Đăng nhập thất bại'
-      });
+      if (error instanceof AppError) {
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+      }
+      
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
+        return ResponseUtils.error(res, errorResponse.error, 400);
+      }
+
+      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
+      return ResponseUtils.internalError(res, errorResponse.error);
     }
   }
 
@@ -29,16 +38,25 @@ export class AuthController {
       const data = RegisterDto.parse(req.body);
       const result = await authService.register(data);
 
-      res.status(201).json({
-        success: true,
-        data: result,
-        message: 'Đăng ký thành công'
-      });
+      ResponseUtils.created(res, result, 'Registration successful');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Đăng ký thất bại'
-      });
+      console.error('Registration error:', error);
+      
+      if (error instanceof AppError) {
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+      }
+      
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
+        return ResponseUtils.error(res, errorResponse.error, 400);
+      }
+
+      // Log the actual error for debugging
+      console.error('Unexpected error in registration:', error);
+      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
+      return ResponseUtils.internalError(res, errorResponse.error);
     }
   }
 
@@ -48,15 +66,21 @@ export class AuthController {
       const data = RefreshTokenDto.parse(req.body);
       const result = await authService.refreshToken(data);
 
-      res.json({
-        success: true,
-        data: result
-      });
+      ResponseUtils.success(res, result, 'Token refreshed successfully');
     } catch (error) {
-      res.status(401).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Refresh token thất bại'
-      });
+      if (error instanceof AppError) {
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+      }
+      
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
+        return ResponseUtils.error(res, errorResponse.error, 400);
+      }
+
+      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
+      return ResponseUtils.internalError(res, errorResponse.error);
     }
   }
 
@@ -66,15 +90,21 @@ export class AuthController {
       const data = VerifyEmailDto.parse(req.body);
       const result = await authService.verifyEmail(data);
 
-      res.json({
-        success: true,
-        message: result.message
-      });
+      ResponseUtils.success(res, null, result.message);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Xác thực email thất bại'
-      });
+      if (error instanceof AppError) {
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+      }
+      
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
+        return ResponseUtils.error(res, errorResponse.error, 400);
+      }
+
+      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
+      return ResponseUtils.internalError(res, errorResponse.error);
     }
   }
 
@@ -84,15 +114,21 @@ export class AuthController {
       const data = ForgotPasswordDto.parse(req.body);
       const result = await authService.forgotPassword(data);
 
-      res.json({
-        success: true,
-        message: result.message
-      });
+      ResponseUtils.success(res, null, result.message);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Gửi email đặt lại mật khẩu thất bại'
-      });
+      if (error instanceof AppError) {
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+      }
+      
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
+        return ResponseUtils.error(res, errorResponse.error, 400);
+      }
+
+      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
+      return ResponseUtils.internalError(res, errorResponse.error);
     }
   }
 
@@ -102,15 +138,21 @@ export class AuthController {
       const data = ResetPasswordDto.parse(req.body);
       const result = await authService.resetPassword(data);
 
-      res.json({
-        success: true,
-        message: result.message
-      });
+      ResponseUtils.success(res, null, result.message);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Đặt lại mật khẩu thất bại'
-      });
+      if (error instanceof AppError) {
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+      }
+      
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
+        return ResponseUtils.error(res, errorResponse.error, 400);
+      }
+
+      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
+      return ResponseUtils.internalError(res, errorResponse.error);
     }
   }
 
@@ -119,15 +161,15 @@ export class AuthController {
     try {
       const result = await authService.logout();
 
-      res.json({
-        success: true,
-        message: result.message
-      });
+      ResponseUtils.success(res, null, result.message);
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Đăng xuất thất bại'
-      });
+      if (error instanceof AppError) {
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+      }
+
+      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
+      return ResponseUtils.internalError(res, errorResponse.error);
     }
   }
 }

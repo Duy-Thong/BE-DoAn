@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { EmbeddingController } from './controller.js';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { AuthMiddleware } from '../../../middlewares/auth.js';
 
 const router = Router();
 const embeddingController = new EmbeddingController();
 
 // Tất cả routes đều cần authentication
-router.use(requireAuth);
+router.use(AuthMiddleware.authenticate);
 
 // CV Embedding routes
 router.post('/cv/:cvId', embeddingController.generateCVEmbedding.bind(embeddingController));

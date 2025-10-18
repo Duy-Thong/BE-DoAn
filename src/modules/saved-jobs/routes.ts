@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middlewares/auth.js';
+import { AuthMiddleware } from '../../middlewares/auth.js';
 import { SavedJobController } from './controller.js';
 
 export const savedJobsRouter = Router();
 const savedJobController = new SavedJobController();
 
 // Protected routes
-savedJobsRouter.use(requireAuth);
+savedJobsRouter.use(AuthMiddleware.authenticate);
 
 // Get user's saved jobs
 savedJobsRouter.get('/', savedJobController.getSavedJobs.bind(savedJobController));

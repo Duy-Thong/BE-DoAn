@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { AIController } from './controller.js';
-import { requireAuth } from '../../middlewares/auth.js';
+import { AuthMiddleware } from '../../middlewares/auth.js';
 
 const router = Router();
 const aiController = new AIController();
 
 // Tất cả routes đều cần authentication
-router.use(requireAuth);
+router.use(AuthMiddleware.authenticate);
 
 // Main AI routes
 router.post('/embeddings/generate', aiController.generateEmbedding.bind(aiController));

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { EducationController } from './controller.js';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { AuthMiddleware } from '../../../middlewares/auth.js';
 
 const router = Router({ mergeParams: true });
 const controller = new EducationController();
 
-router.use(requireAuth);
+router.use(AuthMiddleware.authenticate);
 
 router.post('/', controller.create.bind(controller));
 router.get('/', controller.list.bind(controller));

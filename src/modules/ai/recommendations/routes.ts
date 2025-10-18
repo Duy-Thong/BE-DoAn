@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { RecommendationController } from './controller.js';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { AuthMiddleware } from '../../../middlewares/auth.js';
 
 const router = Router();
 const recommendationController = new RecommendationController();
 
 // Tất cả routes đều cần authentication
-router.use(requireAuth);
+router.use(AuthMiddleware.authenticate);
 
 // Job Recommendations routes
 router.get('/jobs/:cvId', recommendationController.getJobRecommendations.bind(recommendationController));

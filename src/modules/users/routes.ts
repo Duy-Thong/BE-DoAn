@@ -1,16 +1,16 @@
 import { Router } from 'express';
-import { requireAuth, requireRoles } from '../../middlewares/auth.js';
+import { AuthMiddleware } from '../../middlewares/auth.js';
 import { listUsers, createUser, getUser, updateUser, deleteUser } from './controller.js';
 
 export const usersRouter = Router();
 
 // Tất cả routes đều cần authentication
-usersRouter.use(requireAuth);
+usersRouter.use(AuthMiddleware.authenticate);
 
 // User management routes
-usersRouter.get('/', requireRoles('ADMIN'), listUsers);
-usersRouter.post('/', requireRoles('ADMIN'), createUser);
+usersRouter.get('/', AuthMiddleware.requireAdmin, listUsers);
+usersRouter.post('/', AuthMiddleware.requireAdmin, createUser);
 usersRouter.get('/:id', getUser);
-usersRouter.put('/:id', requireRoles('ADMIN'), updateUser);
-usersRouter.delete('/:id', requireRoles('ADMIN'), deleteUser);
+usersRouter.put('/:id', AuthMiddleware.requireAdmin, updateUser);
+usersRouter.delete('/:id', AuthMiddleware.requireAdmin, deleteUser);
 

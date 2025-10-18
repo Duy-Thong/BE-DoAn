@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { CVSkillController } from './controller.js';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { AuthMiddleware } from '../../../middlewares/auth.js';
 
 const router = Router();
 const cvSkillController = new CVSkillController();
 
 // Tất cả routes đều cần authentication
-router.use(requireAuth);
+router.use(AuthMiddleware.authenticate);
 
 // CV Skills routes
 router.post('/:cvId/skills', cvSkillController.createCVSkill.bind(cvSkillController));

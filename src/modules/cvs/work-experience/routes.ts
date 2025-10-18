@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { WorkExperienceController } from './controller.js';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { AuthMiddleware } from '../../../middlewares/auth.js';
 
 const router = Router();
 const workExperienceController = new WorkExperienceController();
 
 // Tất cả routes đều cần authentication
-router.use(requireAuth);
+router.use(AuthMiddleware.authenticate);
 
 // Work Experience routes
 router.post('/:cvId/work-experience', workExperienceController.createWorkExperience.bind(workExperienceController));

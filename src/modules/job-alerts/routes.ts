@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { JobAlertController } from './controller.js';
-import { requireAuth } from '../../middlewares/auth.js';
+import { AuthMiddleware } from '../../middlewares/auth.js';
 
 export const jobAlertsRouter = Router();
 const jobAlertController = new JobAlertController();
 
 // Tất cả routes đều cần authentication
-jobAlertsRouter.use(requireAuth);
+jobAlertsRouter.use(AuthMiddleware.authenticate);
 
 // Job Alert routes
 jobAlertsRouter.get('/', jobAlertController.getUserJobAlerts.bind(jobAlertController));

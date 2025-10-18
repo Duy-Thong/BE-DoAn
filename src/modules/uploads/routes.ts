@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { requireAuth } from '../../middlewares/auth.js';
+import { AuthMiddleware } from '../../middlewares/auth.js';
 import { prisma } from '../../loaders/prisma.js';
 import { z } from 'zod';
 
@@ -101,7 +101,7 @@ const UploadSchema = z.object({
 export const uploadsRouter = Router();
 
 // Upload single file
-uploadsRouter.post('/:type', requireAuth, upload.single('file'), async (req, res) => {
+uploadsRouter.post('/:type', AuthMiddleware.authenticate, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -155,7 +155,7 @@ uploadsRouter.post('/:type', requireAuth, upload.single('file'), async (req, res
 });
 
 // Upload multiple files
-uploadsRouter.post('/:type/multiple', requireAuth, upload.array('files', 5), async (req, res) => {
+uploadsRouter.post('/:type/multiple', AuthMiddleware.authenticate, upload.array('files', 5), async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[];
     
@@ -214,7 +214,7 @@ uploadsRouter.post('/:type/multiple', requireAuth, upload.array('files', 5), asy
 });
 
 // Get user uploads
-uploadsRouter.get('/my-files', requireAuth, async (req, res) => {
+uploadsRouter.get('/my-files', AuthMiddleware.authenticate, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -255,7 +255,7 @@ uploadsRouter.get('/my-files', requireAuth, async (req, res) => {
 });
 
 // Get file by ID
-uploadsRouter.get('/:id', requireAuth, async (req, res) => {
+uploadsRouter.get('/:id', AuthMiddleware.authenticate, async (req, res) => {
   try {
     const file = await prisma.upload.findFirst({
       where: {
@@ -284,7 +284,7 @@ uploadsRouter.get('/:id', requireAuth, async (req, res) => {
 });
 
 // Update file info
-uploadsRouter.put('/:id', requireAuth, async (req, res) => {
+uploadsRouter.put('/:id', AuthMiddleware.authenticate, async (req, res) => {
   try {
     const { title, description } = req.body;
 
@@ -319,7 +319,7 @@ uploadsRouter.put('/:id', requireAuth, async (req, res) => {
 });
 
 // Delete file
-uploadsRouter.delete('/:id', requireAuth, async (req, res) => {
+uploadsRouter.delete('/:id', AuthMiddleware.authenticate, async (req, res) => {
   try {
     const file = await prisma.upload.findFirst({
       where: {
@@ -358,7 +358,7 @@ uploadsRouter.delete('/:id', requireAuth, async (req, res) => {
 });
 
 // Download file
-uploadsRouter.get('/:id/download', requireAuth, async (req, res) => {
+uploadsRouter.get('/:id/download', AuthMiddleware.authenticate, async (req, res) => {
   try {
     const file = await prisma.upload.findFirst({
       where: {

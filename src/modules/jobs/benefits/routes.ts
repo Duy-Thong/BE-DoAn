@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { JobBenefitController } from './controller.js';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { AuthMiddleware } from '../../../middlewares/auth.js';
 
 const router = Router();
 const jobBenefitController = new JobBenefitController();
 
 // Tất cả routes đều cần authentication
-router.use(requireAuth);
+router.use(AuthMiddleware.authenticate);
 
 // Job Benefits routes
 router.post('/:jobId/benefits', jobBenefitController.createJobBenefit.bind(jobBenefitController));

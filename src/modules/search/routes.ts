@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../../loaders/prisma.js';
-import { requireAuth } from '../../middlewares/auth.js';
+import { AuthMiddleware } from '../../middlewares/auth.js';
 
 export const searchRouter = Router();
 
@@ -139,7 +139,7 @@ searchRouter.get('/companies', async (req, res) => {
 });
 
 // Search Users (Auth Required)
-searchRouter.get('/users', requireAuth, async (req, res) => {
+searchRouter.get('/users', AuthMiddleware.authenticate, async (req, res) => {
   try {
     const q = (req.query.q as string) || '';
     const role = (req.query.role as string) || undefined;

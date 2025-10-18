@@ -1,54 +1,91 @@
 import { z } from 'zod';
 
+// Common validation schemas
+const emailSchema = z.string()
+  .min(1, 'Email is required')
+  .email('Invalid email format')
+  .max(255, 'Email too long')
+  .transform(email => email.toLowerCase().trim());
+
+const passwordSchema = z.string()
+  .min(1, 'Password is required');
+
+const phoneSchema = z.string()
+  .optional()
+  .or(z.literal(''));
+
+const fullNameSchema = z.string()
+  .min(1, 'Full name is required');
+
 export const LoginDto = z.object({ 
-  email: z.string().email('Email không hợp lệ'), 
-  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự') 
+  email: emailSchema,
+  password: z.string().min(1, 'Password is required')
 });
 export type LoginDto = z.infer<typeof LoginDto>;
 
 export const RegisterDto = z.object({
-  email: z.string().email('Email không hợp lệ'),
-  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
-  fullName: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự'),
-  phoneNumber: z.string().optional(),
-  dateOfBirth: z.string().datetime().optional(),
+  email: emailSchema,
+  password: passwordSchema,
+  fullName: fullNameSchema,
+  phoneNumber: phoneSchema,
+  dateOfBirth: z.string().datetime().optional().or(z.literal('')),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']).optional(),
-  nationality: z.string().optional(),
+  nationality: z.string().max(100, 'Nationality too long').optional().or(z.literal('')),
   role: z.enum(['CANDIDATE', 'RECRUITER', 'ADMIN']).default('CANDIDATE')
 });
 export type RegisterDto = z.infer<typeof RegisterDto>;
 
 export const VerifyEmailDto = z.object({
-  token: z.string().min(1, 'Token không được để trống')
+  token: z.string()
+    .min(1, 'Token is required')
+    .max(1000, 'Token too long')
+    .regex(/^[a-zA-Z0-9\-_]+$/, 'Invalid token format')
 });
 export type VerifyEmailDto = z.infer<typeof VerifyEmailDto>;
 
 export const ForgotPasswordDto = z.object({
-  email: z.string().email('Email không hợp lệ')
+  email: emailSchema
 });
 export type ForgotPasswordDto = z.infer<typeof ForgotPasswordDto>;
 
 export const ResetPasswordDto = z.object({
-  token: z.string().min(1, 'Token không được để trống'),
-  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự')
+  token: z.string()
+    .min(1, 'Token is required')
+    .max(1000, 'Token too long')
+    .regex(/^[a-zA-Z0-9\-_]+$/, 'Invalid token format'),
+  password: passwordSchema
 });
 export type ResetPasswordDto = z.infer<typeof ResetPasswordDto>;
 
 export const RefreshTokenDto = z.object({
-  refreshToken: z.string().min(1, 'Refresh token không được để trống')
+  refreshToken: z.string()
+    .min(1, 'Refresh token is required')
+    .max(2000, 'Refresh token too long')
 });
 export type RefreshTokenDto = z.infer<typeof RefreshTokenDto>;
 
 export const AuthResponse = z.object({
-  token: z.string(),
+  accessToken: z.string(),
   refreshToken: z.string(),
   user: z.object({
     id: z.string(),
     email: z.string(),
     fullName: z.string(),
     role: z.string(),
+    companyId: z.string().nullable().optional(),
     isEmailVerified: z.boolean(),
-    avatarUrl: z.string().nullable()
+    avatarUrl: z.string().nullable().optional()
   })
 });
 export type AuthResponse = z.infer<typeof AuthResponse>;
+
+export const TokenResponse = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string()
+});
+export type TokenResponse = z.infer<typeof TokenResponse>;
+
+export const MessageResponse = z.object({
+  message: z.string()
+});
+export type MessageResponse = z.infer<typeof MessageResponse>;

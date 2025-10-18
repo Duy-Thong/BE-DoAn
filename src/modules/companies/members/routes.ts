@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { CompanyMemberController } from './controller.js';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { AuthMiddleware } from '../../../middlewares/auth.js';
 
 const router = Router();
 const companyMemberController = new CompanyMemberController();
 
 // Tất cả routes đều cần authentication
-router.use(requireAuth);
+router.use(AuthMiddleware.authenticate);
 
 // Company member management routes
 router.post('/:companyId/invite', companyMemberController.inviteMember.bind(companyMemberController));
