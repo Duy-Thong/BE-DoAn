@@ -1,5 +1,6 @@
 import { prisma } from '../../loaders/prisma.js';
 import { CreateCVDto, UpdateCVDto, SetMainCVDto } from './dto.js';
+import { createNotFoundError, createAuthError } from '../../utils/error.js';
 
 export class CVService {
   // Tạo CV mới
@@ -58,7 +59,7 @@ export class CVService {
     // Kiểm tra quyền sở hữu
     const existingCV = await this.getCVById(cvId, userId);
     if (!existingCV) {
-      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
+      throw createNotFoundError('CV');
     }
 
     // Nếu đặt làm CV chính, bỏ CV chính cũ
@@ -95,7 +96,7 @@ export class CVService {
     // Kiểm tra CV có tồn tại và thuộc về user
     const cv = await this.getCVById(data.cvId, userId);
     if (!cv) {
-      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
+      throw createNotFoundError('CV');
     }
 
     // Bỏ CV chính cũ
@@ -116,7 +117,7 @@ export class CVService {
     // Kiểm tra quyền sở hữu
     const cv = await this.getCVById(cvId, userId);
     if (!cv) {
-      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
+      throw createNotFoundError('CV');
     }
 
     // Nếu đây là CV chính, đặt CV khác làm chính (nếu có)
@@ -151,7 +152,7 @@ export class CVService {
   async generateEmbedding(cvId: string, userId: string) {
     const cv = await this.getCVById(cvId, userId);
     if (!cv) {
-      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
+      throw createNotFoundError('CV');
     }
 
     // TODO: Call AI service to generate embedding
@@ -171,7 +172,7 @@ export class CVService {
   async getCVWithDetails(cvId: string, userId: string) {
     const cv = await this.getCVById(cvId, userId);
     if (!cv) {
-      throw new Error('CV không tìm thấy hoặc không có quyền truy cập');
+      throw createNotFoundError('CV');
     }
 
     return await prisma.cV.findUnique({
@@ -194,5 +195,10 @@ export class CVService {
         }
       }
     });
+  }
+
+  // Download CV (get full CV data for export)
+  async downloadCV(cvId: string, userId: string) {
+    return await this.getCVWithDetails(cvId, userId);
   }
 }

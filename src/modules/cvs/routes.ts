@@ -13,6 +13,7 @@ router.post('/', cvController.createCV.bind(cvController));
 router.get('/', cvController.getUserCVs.bind(cvController));
 router.get('/main', cvController.getMainCV.bind(cvController));
 router.get('/:cvId', cvController.getCVById.bind(cvController));
+router.get('/:cvId/download', cvController.downloadCV.bind(cvController));
 router.put('/:cvId', cvController.updateCV.bind(cvController));
 router.delete('/:cvId', cvController.deleteCV.bind(cvController));
 router.post('/set-main', cvController.setMainCV.bind(cvController));

@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { CVService } from './service.js';
 import { createCVDto, updateCVDto, setMainCVDto } from './dto.js';
+import { ResponseUtils } from '../../utils/response.js';
+import { AppError } from '../../utils/error.js';
+import { ErrorCode } from '../../utils/error-codes.js';
 
 const cvService = new CVService();
 
@@ -10,21 +13,23 @@ export class CVController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return ResponseUtils.unauthorized(res);
       }
 
       const data = createCVDto.parse(req.body);
       const cv = await cvService.createCV(userId, data);
 
-      res.status(201).json({
-        success: true,
-        data: cv
-      });
+      return ResponseUtils.created(res, cv, 'Tạo CV thành công');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to create CV'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi tạo CV');
     }
   }
 
@@ -33,20 +38,16 @@ export class CVController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return ResponseUtils.unauthorized(res);
       }
 
       const cvs = await cvService.getUserCVs(userId);
-
-      res.json({
-        success: true,
-        data: cvs
-      });
+      return ResponseUtils.success(res, cvs);
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch CVs'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi lấy danh sách CV');
     }
   }
 
@@ -57,26 +58,20 @@ export class CVController {
       const { cvId } = req.params;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return ResponseUtils.unauthorized(res);
       }
 
       const cv = await cvService.getCVById(cvId, userId);
       if (!cv) {
-        return res.status(404).json({
-          success: false,
-          error: 'CV not found'
-        });
+        return ResponseUtils.notFound(res, 'CV không tồn tại');
       }
 
-      res.json({
-        success: true,
-        data: cv
-      });
+      return ResponseUtils.success(res, cv);
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch CV'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi lấy thông tin CV');
     }
   }
 
@@ -87,21 +82,23 @@ export class CVController {
       const { cvId } = req.params;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return ResponseUtils.unauthorized(res);
       }
 
       const data = updateCVDto.parse(req.body);
       const cv = await cvService.updateCV(cvId, userId, data);
 
-      res.json({
-        success: true,
-        data: cv
-      });
+      return ResponseUtils.success(res, cv, 'Cập nhật CV thành công');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update CV'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi cập nhật CV');
     }
   }
 
@@ -111,21 +108,23 @@ export class CVController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return ResponseUtils.unauthorized(res);
       }
 
       const data = setMainCVDto.parse(req.body);
       const cv = await cvService.setMainCV(userId, data);
 
-      res.json({
-        success: true,
-        data: cv
-      });
+      return ResponseUtils.success(res, cv, 'Đặt CV chính thành công');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to set main CV'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi đặt CV chính');
     }
   }
 
@@ -136,20 +135,18 @@ export class CVController {
       const { cvId } = req.params;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return ResponseUtils.unauthorized(res);
       }
 
       await cvService.deleteCV(cvId, userId);
 
-      res.json({
-        success: true,
-        message: 'CV deleted successfully'
-      });
+      return ResponseUtils.success(res, null, 'Xóa CV thành công');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to delete CV'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi xóa CV');
     }
   }
 
@@ -159,20 +156,18 @@ export class CVController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return ResponseUtils.unauthorized(res);
       }
 
       const cv = await cvService.getMainCV(userId);
 
-      res.json({
-        success: true,
-        data: cv
-      });
+      return ResponseUtils.success(res, cv);
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch main CV'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi lấy CV chính');
     }
   }
 
@@ -183,20 +178,18 @@ export class CVController {
       const { cvId } = req.params;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return ResponseUtils.unauthorized(res);
       }
 
       const cvData = await cvService.downloadCV(cvId, userId);
 
-      res.json({
-        success: true,
-        data: cvData
-      });
+      return ResponseUtils.success(res, cvData, 'Lấy thông tin CV để tải xuống thành công');
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to download CV'
-      });
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi tải CV');
     }
   }
 }
