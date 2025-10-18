@@ -1,26 +1,59 @@
-import bcrypt from 'bcrypt';
 import { Prisma } from '../../generated/prisma/index.js';
 import { prisma } from '../../loaders/prisma.js';
-import { AppError } from '../../utils/error.js';
+import { AuthUtils } from '../../utils/auth.js';
 import { ValidationUtils } from '../../utils/validate.js';
+import {
+  createValidationError,
+  createNotFoundError,
+  createConflictError,
+} from '../../utils/error.js';
 import type { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto.js';
 
+/**
+ * Common select fields for user queries
+ * Avoids duplication across service methods
+ */
+const USER_SELECT_FIELDS = {
+  id: true,
+  email: true,
+  fullName: true,
+  phoneNumber: true,
+  dateOfBirth: true,
+  gender: true,
+  nationality: true,
+  role: true,
+  isActive: true,
+  isLocked: true,
+  isEmailVerified: true,
+  lastLoginAt: true,
+  avatarUrl: true,
+  companyId: true,
+  companyRole: true,
+  joinedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 export class UsersService {
-  // List users with pagination and filtering
+  // ========================================
+  // LIST USERS
+  // ========================================
   async list(query: UserQueryDto) {
     const { page, limit, search, role, isActive, isLocked, isEmailVerified, companyId, sortBy, sortOrder } = query;
 
     const where: Prisma.UserWhereInput = {};
 
-    // Apply filters
+    // Apply search filter
     if (search) {
+      const sanitizedSearch = ValidationUtils.validateSearchQuery(search);
       where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
-        { fullName: { contains: search, mode: 'insensitive' } },
-        { phoneNumber: { contains: search, mode: 'insensitive' } },
+        { email: { contains: sanitizedSearch, mode: 'insensitive' } },
+        { fullName: { contains: sanitizedSearch, mode: 'insensitive' } },
+        { phoneNumber: { contains: sanitizedSearch, mode: 'insensitive' } },
       ];
     }
 
+    // Apply other filters
     if (role !== undefined) where.role = role;
     if (isActive !== undefined) where.isActive = isActive;
     if (isLocked !== undefined) where.isLocked = isLocked;
@@ -35,26 +68,7 @@ export class UsersService {
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        select: {
-          id: true,
-          email: true,
-          fullName: true,
-          phoneNumber: true,
-          dateOfBirth: true,
-          gender: true,
-          nationality: true,
-          role: true,
-          isActive: true,
-          isLocked: true,
-          isEmailVerified: true,
-          lastLoginAt: true,
-          avatarUrl: true,
-          companyId: true,
-          companyRole: true,
-          joinedAt: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: USER_SELECT_FIELDS,
       }),
       prisma.user.count({ where }),
     ]);
@@ -70,80 +84,66 @@ export class UsersService {
     };
   }
 
-  // Create a new user
+  // ========================================
+  // CREATE USER
+  // ========================================
   async create(input: CreateUserDto) {
+    // Email already normalized by Zod transform
+    const email = input.email;
+
+    // Validate password strength
+    const passwordValidation = ValidationUtils.isValidPassword(input.password);
+    if (!passwordValidation.isValid) {
+      throw createValidationError(passwordValidation.errors);
+    }
+
+    // Validate phone number if provided
+    if (input.phoneNumber && input.phoneNumber.trim()) {
+      if (!ValidationUtils.isValidVietnamesePhone(input.phoneNumber)) {
+        throw createValidationError('Số điện thoại không hợp lệ');
+      }
+    }
+
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: input.email },
+      where: { email },
     });
 
     if (existingUser) {
-      throw new AppError('Email đã tồn tại', 400);
+      throw createConflictError('Email đã tồn tại');
     }
 
-    const passwordHash = await bcrypt.hash(input.password, 10);
+    // Hash password using AuthUtils (12 rounds)
+    const passwordHash = await AuthUtils.hashPassword(input.password);
 
+    // Create user with sanitized inputs
     const user = await prisma.user.create({
       data: {
-        email: input.email,
-        fullName: input.fullName,
+        email,
+        fullName: ValidationUtils.sanitizeString(input.fullName),
         passwordHash,
-        phoneNumber: input.phoneNumber,
+        phoneNumber: input.phoneNumber ? ValidationUtils.sanitizeString(input.phoneNumber) : null,
         dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
         gender: input.gender,
-        nationality: input.nationality,
+        nationality: input.nationality ? ValidationUtils.sanitizeString(input.nationality) : null,
         role: input.role,
         avatarUrl: input.avatarUrl,
         companyId: input.companyId,
       },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        phoneNumber: true,
-        dateOfBirth: true,
-        gender: true,
-        nationality: true,
-        role: true,
-        isActive: true,
-        isLocked: true,
-        isEmailVerified: true,
-        lastLoginAt: true,
-        avatarUrl: true,
-        companyId: true,
-        companyRole: true,
-        joinedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USER_SELECT_FIELDS,
     });
 
     return user;
   }
 
-  // Get user by ID
+  // ========================================
+  // GET USER BY ID
+  // ========================================
   async getById(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
-        id: true,
-        email: true,
-        fullName: true,
-        phoneNumber: true,
-        dateOfBirth: true,
-        gender: true,
-        nationality: true,
-        role: true,
-        isActive: true,
-        isLocked: true,
-        isEmailVerified: true,
-        lastLoginAt: true,
-        avatarUrl: true,
-        companyId: true,
-        companyRole: true,
-        joinedAt: true,
-        createdAt: true,
-        updatedAt: true,
+        ...USER_SELECT_FIELDS,
         company: {
           select: {
             id: true,
@@ -155,90 +155,99 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new AppError('Người dùng không tồn tại', 404);
+      throw createNotFoundError('Người dùng');
     }
 
     return user;
   }
 
-  // Update user
+  // ========================================
+  // UPDATE USER
+  // ========================================
   async update(id: string, input: UpdateUserDto) {
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-    });
-
-    if (!existingUser) {
-      throw new AppError('Người dùng không tồn tại', 404);
-    }
-
-    // Check email uniqueness if email is being updated
-    if (input.email && input.email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email: input.email },
+    // Use transaction to prevent race conditions
+    return await prisma.$transaction(async (tx) => {
+      // Check if user exists
+      const existingUser = await tx.user.findUnique({
+        where: { id },
       });
 
-      if (emailExists) {
-        throw new AppError('Email đã tồn tại', 400);
+      if (!existingUser) {
+        throw createNotFoundError('Người dùng');
       }
-    }
 
-    const data: Prisma.UserUpdateInput = {};
+      // Check email uniqueness if email is being updated
+      if (input.email && input.email !== existingUser.email) {
+        const emailExists = await tx.user.findUnique({
+          where: { email: input.email },
+        });
 
-    if (input.email !== undefined) data.email = input.email;
-    if (input.fullName !== undefined) data.fullName = input.fullName;
-    if (input.phoneNumber !== undefined) data.phoneNumber = input.phoneNumber;
-    if (input.dateOfBirth !== undefined) {
-      data.dateOfBirth = input.dateOfBirth ? new Date(input.dateOfBirth) : null;
-    }
-    if (input.gender !== undefined) data.gender = input.gender;
-    if (input.nationality !== undefined) data.nationality = input.nationality;
-    if (input.avatarUrl !== undefined) data.avatarUrl = input.avatarUrl;
-    if (input.password) {
-      data.passwordHash = await bcrypt.hash(input.password, 10);
-    }
-    if (input.role !== undefined) data.role = input.role;
-    if (input.isActive !== undefined) data.isActive = input.isActive;
-    if (input.isLocked !== undefined) data.isLocked = input.isLocked;
-    if (input.isEmailVerified !== undefined) data.isEmailVerified = input.isEmailVerified;
-    if (input.companyId !== undefined) data.companyId = input.companyId;
+        if (emailExists) {
+          throw createConflictError('Email đã tồn tại');
+        }
+      }
 
-    const user = await prisma.user.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        phoneNumber: true,
-        dateOfBirth: true,
-        gender: true,
-        nationality: true,
-        role: true,
-        isActive: true,
-        isLocked: true,
-        isEmailVerified: true,
-        lastLoginAt: true,
-        avatarUrl: true,
-        companyId: true,
-        companyRole: true,
-        joinedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      // Validate password if being updated
+      if (input.password) {
+        const passwordValidation = ValidationUtils.isValidPassword(input.password);
+        if (!passwordValidation.isValid) {
+          throw createValidationError(passwordValidation.errors);
+        }
+      }
+
+      // Validate phone number if being updated
+      if (input.phoneNumber && input.phoneNumber.trim()) {
+        if (!ValidationUtils.isValidVietnamesePhone(input.phoneNumber)) {
+          throw createValidationError('Số điện thoại không hợp lệ');
+        }
+      }
+
+      // Build update data with sanitization
+      const data: Prisma.UserUpdateInput = {};
+
+      if (input.email !== undefined) data.email = input.email; // Already normalized by Zod
+      if (input.fullName !== undefined) data.fullName = ValidationUtils.sanitizeString(input.fullName);
+      if (input.phoneNumber !== undefined) {
+        data.phoneNumber = input.phoneNumber ? ValidationUtils.sanitizeString(input.phoneNumber) : null;
+      }
+      if (input.dateOfBirth !== undefined) {
+        data.dateOfBirth = input.dateOfBirth ? new Date(input.dateOfBirth) : null;
+      }
+      if (input.gender !== undefined) data.gender = input.gender;
+      if (input.nationality !== undefined) {
+        data.nationality = input.nationality ? ValidationUtils.sanitizeString(input.nationality) : null;
+      }
+      if (input.avatarUrl !== undefined) data.avatarUrl = input.avatarUrl;
+      if (input.password) {
+        data.passwordHash = await AuthUtils.hashPassword(input.password);
+      }
+      if (input.role !== undefined) data.role = input.role;
+      if (input.isActive !== undefined) data.isActive = input.isActive;
+      if (input.isLocked !== undefined) data.isLocked = input.isLocked;
+      if (input.isEmailVerified !== undefined) data.isEmailVerified = input.isEmailVerified;
+      if (input.companyId !== undefined) data.companyId = input.companyId;
+
+      // Update user
+      const user = await tx.user.update({
+        where: { id },
+        data,
+        select: USER_SELECT_FIELDS,
+      });
+
+      return user;
     });
-
-    return user;
   }
 
-  // Delete user
+  // ========================================
+  // DELETE USER
+  // ========================================
   async remove(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
     });
 
     if (!user) {
-      throw new AppError('Người dùng không tồn tại', 404);
+      throw createNotFoundError('Người dùng');
     }
 
     await prisma.user.delete({
@@ -248,7 +257,10 @@ export class UsersService {
     return { message: 'Xóa người dùng thành công' };
   }
 
-  // Additional methods
+  // ========================================
+  // HELPER METHODS
+  // ========================================
+
   async updateLastLogin(id: string) {
     return prisma.user.update({
       where: { id },
@@ -257,8 +269,9 @@ export class UsersService {
   }
 
   async findByEmail(email: string) {
+    const normalizedEmail = ValidationUtils.normalizeEmail(email);
     return prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
   }
 
@@ -274,25 +287,36 @@ export class UsersService {
     return this.update(id, { isEmailVerified: true });
   }
 
+  // ========================================
+  // CHANGE PASSWORD
+  // ========================================
   async changePassword(id: string, currentPassword: string, newPassword: string) {
     const user = await prisma.user.findUnique({
       where: { id },
+      select: {
+        id: true,
+        passwordHash: true,
+      },
     });
 
     if (!user) {
-      throw new AppError('Người dùng không tồn tại', 404);
+      throw createNotFoundError('Người dùng');
     }
 
     // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+    const isValidPassword = await AuthUtils.verifyPassword(currentPassword, user.passwordHash);
     if (!isValidPassword) {
-      throw new AppError('Mật khẩu hiện tại không đúng', 400);
+      throw createValidationError('Mật khẩu hiện tại không đúng');
     }
 
-    // Password validation removed - no strength requirements
+    // Validate new password strength
+    const passwordValidation = ValidationUtils.isValidPassword(newPassword);
+    if (!passwordValidation.isValid) {
+      throw createValidationError(passwordValidation.errors);
+    }
 
     // Hash and update new password
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    const newPasswordHash = await AuthUtils.hashPassword(newPassword);
     await prisma.user.update({
       where: { id },
       data: { passwordHash: newPasswordHash },
