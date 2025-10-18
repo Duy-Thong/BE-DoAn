@@ -9,12 +9,12 @@ const cvController = new CVController();
 router.use(AuthMiddleware.authenticate);
 
 // CV management routes
-router.post('/', cvController.createCV.bind(cvController));
+router.post('/', cvController.createCompleteCV.bind(cvController)); // Chỉ dùng Complete API
 router.get('/', cvController.getUserCVs.bind(cvController));
 router.get('/main', cvController.getMainCV.bind(cvController));
 router.get('/:cvId', cvController.getCVById.bind(cvController));
 router.get('/:cvId/download', cvController.downloadCV.bind(cvController));
-router.put('/:cvId', cvController.updateCV.bind(cvController));
+router.put('/:cvId', cvController.updateCompleteCV.bind(cvController)); // Chỉ dùng Complete API
 router.delete('/:cvId', cvController.deleteCV.bind(cvController));
 router.post('/set-main', cvController.setMainCV.bind(cvController));
 
