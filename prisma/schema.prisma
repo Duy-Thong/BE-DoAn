@@ -22,29 +22,34 @@ model User {
   role            UserRole       @default(CANDIDATE)
   isActive        Boolean        @default(true)
   isLocked        Boolean        @default(false)
-  isEmailVerified Boolean        @default(false)
   lastLoginAt     DateTime?
   avatarUrl       String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   
+  // Company relationship (one-to-many)
+  companyId       String?
+  companyRole     CompanyRole?   @default(VIEWER)
+  joinedAt        DateTime?      @default(now())
+  
+  // Relations (for querying, not stored in database)
+  company         Company?       @relation(fields: [companyId], references: [id])
+  
   // Core relationships only
-  applications    Application[]
   savedJobs       SavedJob[]
-  jobAlerts       JobAlert[]
   cvs             CV[]
-  companyMembers  CompanyMember[]
   notifications   Notification[]
   
-  // Virtual relationships (computed via ownerType + ownerId)
-  socialMedia     SocialMedia[] @relation("UserSocialMedia")
+  // Social media profiles (polymorphic relationship via ownerType + ownerId)
   
   @@index([email])
   @@index([phoneNumber])
   @@index([role])
   @@index([isActive])
+  @@index([companyId])
 }
 
+// CANDIDATE -> ĐĂNG KÝ CTY ( PHÊ DUYỆT ) -> OWNER CTY , INVITE USER KHÁC VÀO CTY VÀ GẮN ROLE .
 model Company {
   id              String   @id @default(cuid())
   name            String
@@ -63,10 +68,9 @@ model Company {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   jobs            Job[]
-  members         CompanyMember[]
+  users           User[]   // 1 company có nhiều users, 1 user chỉ thuộc về 1 company
   
-  // Virtual relationships (computed via ownerType + ownerId)
-  socialMedia     SocialMedia[] @relation("CompanySocialMedia")
+  // Social media profiles (polymorphic relationship via ownerType + ownerId)
   
   @@index([name])
   @@index([industry])
@@ -74,20 +78,6 @@ model Company {
   @@index([createdAt])
 }
 
-model CompanyMember {
-  id        String        @id @default(cuid())
-  role      CompanyRole   @default(VIEWER)
-  joinedAt  DateTime      @default(now())
-  user      User          @relation(fields: [userId], references: [id])
-  userId    String
-  company   Company       @relation(fields: [companyId], references: [id])
-  companyId String
-  invitedBy String?       // User ID who invited this member (no FK constraint)
-  
-  @@unique([userId, companyId])
-  @@index([companyId])
-  @@index([userId])
-}
 
 model CV {
   id              String   @id @default(cuid())
@@ -104,7 +94,6 @@ model CV {
   address         String?
   avatarUrl       String?
   
-  // Social Links handled by SocialMedia model
   
   // Current Position (like LinkedIn headline)
   currentPosition String?  // "Senior Developer at ABC Corp"
@@ -123,22 +112,19 @@ model CV {
   references      Reference[]
   skills          CVSkill[]
   activities      Activity[]
-  
-  // Virtual relationships (computed via ownerType + ownerId)
-  socialMedia     SocialMedia[] @relation("CVSocialMedia")
-  
-  // Applications using this CV
   applications    Application[]
   
+  // Social media profiles (polymorphic relationship via ownerType + ownerId)
+    
   // Metadata
-  version         Int      @default(1)
   lastGeneratedAt DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
-  user            User     @relation(fields: [userId], references: [id])
   userId          String
   embedding       Float[]
+  
+  // Relations (for querying, not stored in database)
+  user            User     @relation(fields: [userId], references: [id])
   
   @@index([userId])
   @@index([isMain])
@@ -150,78 +136,68 @@ model Job {
   title           String
   description     String?
   location        String?
+  industry        String?
+  experienceLevel ExperienceLevel?
   type            JobType       @default(FULL_TIME)
-  salary          String?
+  salary          Float?
   embedding       Float[] 
-  remoteWork      Boolean       @default(false)
-  urgent          Boolean       @default(false)
-  featured        Boolean       @default(false)
+  urgent          Boolean       @default(false)  // job dang tuyen gap
   isActive        Boolean       @default(true)
-  isApproved      Boolean       @default(false)
   expiresAt       DateTime?
-  viewCount       Int           @default(0)
   applicationCount Int          @default(0)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  
-  company         Company       @relation(fields: [companyId], references: [id])
   companyId       String
+  
+  // Relations (for querying, not stored in database)
+  company         Company       @relation(fields: [companyId], references: [id])
   applications    Application[]
-  views           JobView[]
-  savedBy         SavedJob[]
+  savedJobs       SavedJob[]
+
   requirements    JobRequirement[]
   benefits        JobBenefit[]
   jobSkills       JobSkill[]
   
   @@index([companyId])
-  @@index([isActive, isApproved])
+  @@index([isActive])
   @@index([type])
   @@index([createdAt])
   @@index([expiresAt])
-  @@index([featured, isActive])
 }
 
 model Application {
   id              String   @id @default(cuid())
   status          AppStatus @default(PENDING)
-  cv              CV?      @relation(fields: [cvId], references: [id])
-  cvId            String?
+  cvId            String
+  jobId           String
   coverLetter     String?
-  appliedAt       DateTime @default(now())
-  availableFrom   DateTime?
   notes           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id])
-  userId          String
-  job             Job      @relation(fields: [jobId], references: [id])
-  jobId           String
   
-  @@index([userId, status])
+  // Relations (for querying, not stored in database)
+  cv              CV       @relation(fields: [cvId], references: [id])
+  job             Job      @relation(fields: [jobId], references: [id])
+  
+  @@unique([cvId, jobId]) // Một CV chỉ có thể apply cho một Job một lần
   @@index([jobId, status])
-  @@index([appliedAt])
+  @@index([createdAt])
 }
 
-// Profile model removed - information is already in CV and User models
 
-// CV detail models removed - using structured JSON instead for better performance
 
 model SocialMedia {
   id          String   @id @default(cuid())
   platform    String   // linkedin, facebook, twitter, instagram, github, blog, website, etc.
   url         String
+  
   isVerified  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  // Polymorphic relationship
+  // Polymorphic relationship - simplified approach
   ownerType   String   // "User", "Company", "CV"
   ownerId     String   // ID of the owner (user, company, or cv)
-  
-  // Virtual relationships (computed via ownerType + ownerId)
-  user        User?    @relation("UserSocialMedia", fields: [ownerId], references: [id], map: "user_ownerId_fkey")
-  company     Company? @relation("CompanySocialMedia", fields: [ownerId], references: [id], map: "company_ownerId_fkey")
-  cv          CV?      @relation("CVSocialMedia", fields: [ownerId], references: [id], map: "cv_ownerId_fkey")
   
   @@index([platform])
   @@index([ownerType, ownerId])
@@ -229,41 +205,19 @@ model SocialMedia {
 
 model SavedJob {
   id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
-  job       Job      @relation(fields: [jobId], references: [id])
   jobId     String
   createdAt DateTime @default(now())
+  
+  // Relations (for querying, not stored in database)
+  user      User     @relation(fields: [userId], references: [id])
+  job       Job      @relation(fields: [jobId], references: [id])
   
   @@unique([userId, jobId])
   @@index([userId])
   @@index([createdAt])
 }
 
-model JobAlert {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  keywords  String?
-  location  String?
-  type      JobType?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-}
-
-model JobView {
-  id        String   @id @default(cuid())
-  job       Job      @relation(fields: [jobId], references: [id])
-  jobId     String
-  viewedAt  DateTime @default(now())
-  
-  @@index([jobId, viewedAt])
-  @@index([viewedAt])
-}
-
-// JobRecommendation model removed - will use realtime search instead
-
-// InternalNote model removed - not needed for core functionality
 
 enum UserRole {
   ADMIN
@@ -287,9 +241,7 @@ enum JobType {
 
 enum AppStatus {
   PENDING
-  REVIEWING
-  INTERVIEW
-  OFFER
+  ACCEPTED
   REJECTED
 }
 
@@ -361,8 +313,10 @@ model Notification {
   isRead      Boolean  @default(false)
   data        Json?    // Dữ liệu bổ sung
   createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
   userId      String
+  
+  // Relations (for querying, not stored in database)
+  user        User     @relation(fields: [userId], references: [id])
   
   @@index([userId, isRead])
   @@index([createdAt])
@@ -380,9 +334,10 @@ model WorkExperience {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  cv          CV       @relation(fields: [cvId], references: [id])
   cvId        String
+  
+  // Relations (for querying, not stored in database)
+  cv          CV       @relation(fields: [cvId], references: [id])
   
   @@index([cvId])
 }
@@ -396,9 +351,10 @@ model Education {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  cv          CV       @relation(fields: [cvId], references: [id])
   cvId        String
+  
+  // Relations (for querying, not stored in database)
+  cv          CV       @relation(fields: [cvId], references: [id])
   
   @@index([cvId])
 }
@@ -410,9 +366,10 @@ model Language {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  cv          CV       @relation(fields: [cvId], references: [id])
   cvId        String
+  
+  // Relations (for querying, not stored in database)
+  cv          CV       @relation(fields: [cvId], references: [id])
   
   @@index([cvId])
 }
@@ -425,9 +382,10 @@ model Certification {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  cv          CV       @relation(fields: [cvId], references: [id])
   cvId        String
+  
+  // Relations (for querying, not stored in database)
+  cv          CV       @relation(fields: [cvId], references: [id])
   
   @@index([cvId])
 }
@@ -442,9 +400,10 @@ model Project {
   role        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  cv          CV       @relation(fields: [cvId], references: [id])
   cvId        String
+  
+  // Relations (for querying, not stored in database)
+  cv          CV       @relation(fields: [cvId], references: [id])
   
   @@index([cvId])
 }
@@ -456,9 +415,10 @@ model Achievement {
   acquiredAt  DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  cv          CV       @relation(fields: [cvId], references: [id])
   cvId        String
+  
+  // Relations (for querying, not stored in database)
+  cv          CV       @relation(fields: [cvId], references: [id])
   
   @@index([cvId])
 }
@@ -471,9 +431,10 @@ model Reference {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  cv          CV       @relation(fields: [cvId], references: [id])
   cvId        String
+  
+  // Relations (for querying, not stored in database)
+  cv          CV       @relation(fields: [cvId], references: [id])
   
   @@index([cvId])
 }
@@ -487,9 +448,10 @@ model Activity {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  cv          CV       @relation(fields: [cvId], references: [id])
   cvId        String
+  
+  // Relations (for querying, not stored in database)
+  cv          CV       @relation(fields: [cvId], references: [id])
   
   @@index([cvId])
 }
@@ -502,9 +464,10 @@ model CVSkill {
   description         String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
-  
-  cv                  CV       @relation(fields: [cvId], references: [id])
   cvId                String
+  
+  // Relations (for querying, not stored in database)
+  cv                  CV       @relation(fields: [cvId], references: [id])
   
   @@unique([cvId, skillName])
   @@index([cvId])
@@ -518,9 +481,10 @@ model JobRequirement {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  job         Job      @relation(fields: [jobId], references: [id])
   jobId       String
+  
+  // Relations (for querying, not stored in database)
+  job         Job      @relation(fields: [jobId], references: [id])
   
   @@index([jobId])
 }
@@ -531,9 +495,10 @@ model JobBenefit {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  job         Job      @relation(fields: [jobId], references: [id])
   jobId       String
+  
+  // Relations (for querying, not stored in database)
+  job         Job      @relation(fields: [jobId], references: [id])
   
   @@index([jobId])
 }
@@ -542,8 +507,10 @@ model JobSkill {
   id          String   @id @default(cuid())
   skillName   String   // Direct skill name: "JavaScript", "React", "Python", etc.
   isRequired  Boolean  @default(true)
-  job         Job      @relation(fields: [jobId], references: [id])
   jobId       String
+  
+  // Relations (for querying, not stored in database)
+  job         Job      @relation(fields: [jobId], references: [id])
   
   @@unique([jobId, skillName])
   @@index([jobId])
