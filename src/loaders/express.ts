@@ -15,7 +15,6 @@ import { searchRouter } from '../modules/search/routes.js';
 import { uploadsRouter } from '../modules/uploads/routes.js';
 // New modules
 import cvsRouter from '../modules/cvs/routes.js';
-import companyMembersRouter from '../modules/companies/members/routes.js';
 import adminRouter from '../modules/admin/routes.js';
 // Additional modules
 import { notificationsRouter } from '../modules/notifications/routes.js';
@@ -42,7 +41,6 @@ export function createExpressApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/companies', companiesRouter);
-  app.use('/api/company-members', companyMembersRouter);
   app.use('/api/jobs', jobsRouter);
   
   // Job nested routes
