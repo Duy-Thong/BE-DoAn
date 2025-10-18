@@ -25,7 +25,7 @@ usersRouter.put('/me', updateMyProfile);
 usersRouter.put('/me/change-password', changeMyPassword);
 
 // CRUD routes
-usersRouter.get('/', AuthMiddleware.requireAdmin, listUsers);
+usersRouter.get('/', listUsers); // Cho phép tất cả user đã authenticate search
 usersRouter.post('/', AuthMiddleware.requireAdmin, createUser);
 usersRouter.get('/:id', getUser);
 usersRouter.put('/:id', AuthMiddleware.requireAdmin, updateUser);
