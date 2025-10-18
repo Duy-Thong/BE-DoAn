@@ -7,10 +7,11 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ) {
-  const status = err.status || 500;
+  const status = err.statusCode || err.status || 500;
   const message = err.message || 'Internal Server Error';
+  const code = err.code || undefined;
   const details = err.details || undefined;
-  logger.error({ err, status }, message);
-  res.status(status).json({ error: { message, status, details } });
+  logger.error({ err, status, code }, message);
+  res.status(status).json({ error: { message, status, code, details } });
 }
 

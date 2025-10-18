@@ -8,6 +8,7 @@ export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
+  code?: string;
   message?: string;
   pagination?: {
     page: number;
@@ -51,11 +52,13 @@ export class ResponseUtils {
     res: Response,
     error: string,
     statusCode: number = 400,
-    message?: string
+    message?: string,
+    code?: string
   ): void {
     const response: ApiResponse = {
       success: false,
       error,
+      code,
       message,
       meta: {
         timestamp: new Date().toISOString(),

@@ -17,18 +17,15 @@ export class AuthController {
       ResponseUtils.success(res, result, 'Login successful');
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code as ErrorCode);
-        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
-      }
-      
-      // Handle validation errors
-      if (error instanceof Error && error.name === 'ZodError') {
-        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
-        return ResponseUtils.error(res, errorResponse.error, 400);
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
-      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
-      return ResponseUtils.internalError(res, errorResponse.error);
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi máy chủ nội bộ');
     }
   }
 
@@ -41,22 +38,19 @@ export class AuthController {
       ResponseUtils.created(res, result, 'Registration successful');
     } catch (error) {
       console.error('Registration error:', error);
-      
+
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
-        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
-      
+
       // Handle validation errors
       if (error instanceof Error && error.name === 'ZodError') {
-        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
-        return ResponseUtils.error(res, errorResponse.error, 400);
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
       }
 
       // Log the actual error for debugging
       console.error('Unexpected error in registration:', error);
-      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
-      return ResponseUtils.internalError(res, errorResponse.error);
+      return ResponseUtils.internalError(res, 'Lỗi máy chủ nội bộ');
     }
   }
 
@@ -69,18 +63,15 @@ export class AuthController {
       ResponseUtils.success(res, result, 'Token refreshed successfully');
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
-        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
-      }
-      
-      // Handle validation errors
-      if (error instanceof Error && error.name === 'ZodError') {
-        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
-        return ResponseUtils.error(res, errorResponse.error, 400);
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
-      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
-      return ResponseUtils.internalError(res, errorResponse.error);
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi máy chủ nội bộ');
     }
   }
 
@@ -93,18 +84,15 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
-        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
-      }
-      
-      // Handle validation errors
-      if (error instanceof Error && error.name === 'ZodError') {
-        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
-        return ResponseUtils.error(res, errorResponse.error, 400);
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
-      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
-      return ResponseUtils.internalError(res, errorResponse.error);
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi máy chủ nội bộ');
     }
   }
 
@@ -117,18 +105,15 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
-        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
-      }
-      
-      // Handle validation errors
-      if (error instanceof Error && error.name === 'ZodError') {
-        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
-        return ResponseUtils.error(res, errorResponse.error, 400);
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
-      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
-      return ResponseUtils.internalError(res, errorResponse.error);
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi máy chủ nội bộ');
     }
   }
 
@@ -141,18 +126,15 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
-        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
-      }
-      
-      // Handle validation errors
-      if (error instanceof Error && error.name === 'ZodError') {
-        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
-        return ResponseUtils.error(res, errorResponse.error, 400);
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
-      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
-      return ResponseUtils.internalError(res, errorResponse.error);
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi máy chủ nội bộ');
     }
   }
 
@@ -165,18 +147,15 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
-        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
       // Handle validation errors
       if (error instanceof Error && error.name === 'ZodError') {
-        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
-        return ResponseUtils.error(res, errorResponse.error, 400);
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
       }
 
-      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
-      return ResponseUtils.internalError(res, errorResponse.error);
+      return ResponseUtils.internalError(res, 'Lỗi máy chủ nội bộ');
     }
   }
 
@@ -188,12 +167,10 @@ export class AuthController {
       ResponseUtils.success(res, null, result.message);
     } catch (error) {
       if (error instanceof AppError) {
-        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code! as ErrorCode);
-        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
-      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
-      return ResponseUtils.internalError(res, errorResponse.error);
+      return ResponseUtils.internalError(res, 'Lỗi máy chủ nội bộ');
     }
   }
 }
