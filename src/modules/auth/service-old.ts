@@ -1,26 +1,21 @@
 import { prisma } from '../../loaders/prisma.js';
 import { AuthUtils } from '../../utils/auth.js';
 import { ValidationUtils } from '../../utils/validate.js';
-import {
-  createValidationError,
-  createAuthError,
-  createNotFoundError,
-  createConflictError,
-  AuthenticationError,
-} from '../../utils/error.js';
+import { ErrorCode, ErrorCodeUtils } from '../../utils/error-codes.js';
+import { AppError } from '../../utils/error.js';
 import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto } from './dto.js';
 
 export class AuthService {
-  // ========================================
-  // LOGIN
-  // ========================================
+  // Login user
   async login(data: LoginDto) {
-    // NOTE: Email validation already handled by Zod in DTO
-    const email = ValidationUtils.normalizeEmail(data.email);
+    // Validate email format
+    if (!AuthUtils.validateEmail(data.email)) {
+      throw AuthUtils.createValidationError(ErrorCode.VAL_INVALID_EMAIL);
+    }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Find user by email
+    const user = await prisma.user.findUnique({ 
+      where: { email: data.email.toLowerCase().trim() },
       select: {
         id: true,
         email: true,
@@ -38,22 +33,23 @@ export class AuthService {
     });
 
     if (!user) {
-      throw createAuthError('Email hoặc mật khẩu không đúng', 'AUTH_INVALID_CREDENTIALS');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_INVALID_CREDENTIALS);
     }
-
-    // Check account status
+    
+    // Check if user is locked
     if (user.isLocked) {
-      throw createAuthError('Tài khoản đã bị khóa', 'AUTH_ACCOUNT_LOCKED');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_ACCOUNT_LOCKED);
     }
 
+    // Check if user is active
     if (!user.isActive) {
-      throw createAuthError('Tài khoản chưa được kích hoạt', 'AUTH_ACCOUNT_INACTIVE');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_ACCOUNT_INACTIVE);
     }
 
     // Verify password
     const isPasswordValid = await AuthUtils.verifyPassword(data.password, user.passwordHash);
     if (!isPasswordValid) {
-      throw createAuthError('Email hoặc mật khẩu không đúng', 'AUTH_INVALID_CREDENTIALS');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_INVALID_CREDENTIALS);
     }
 
     // Update last login
@@ -82,48 +78,48 @@ export class AuthService {
     };
   }
 
-  // ========================================
-  // REGISTER
-  // ========================================
+  // Register new user
   async register(data: RegisterDto) {
-    // NOTE: Email validation already handled by Zod in DTO
-    const email = ValidationUtils.normalizeEmail(data.email);
+    // Basic email validation (Zod already handles this)
+    if (!data.email || !data.email.includes('@')) {
+      throw AuthUtils.createValidationError(ErrorCode.VAL_INVALID_EMAIL);
+    }
 
     // Validate password strength
     const passwordValidation = ValidationUtils.isValidPassword(data.password);
     if (!passwordValidation.isValid) {
-      throw createValidationError(passwordValidation.errors);
-    }
-
-    // Validate phone number if provided
-    if (data.phoneNumber && data.phoneNumber.trim()) {
-      if (!ValidationUtils.isValidVietnamesePhone(data.phoneNumber)) {
-        throw createValidationError('Số điện thoại không hợp lệ');
-      }
+      throw new AppError(passwordValidation.errors.join(', '), 400, true, ErrorCode.VAL_INVALID_PASSWORD);
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email: data.email.toLowerCase().trim() }
     });
     if (existingUser) {
-      throw createConflictError('Email đã được sử dụng');
+      throw AuthUtils.createAuthError(ErrorCode.BIZ_USER_ALREADY_EXISTS);
     }
 
     // Hash password
     const passwordHash = await AuthUtils.hashPassword(data.password);
 
-    // Create user (always CANDIDATE role for public registration)
+    // Validate phone number if provided
+    if (data.phoneNumber && data.phoneNumber.trim()) {
+      if (!ValidationUtils.isValidVietnamesePhone(data.phoneNumber)) {
+        throw new AppError('Số điện thoại không hợp lệ', 400, true, ErrorCode.VAL_INVALID_FORMAT);
+      }
+    }
+
+    // Create user with CANDIDATE role (security: users cannot choose their role during registration)
     const user = await prisma.user.create({
       data: {
-        email,
+        email: data.email.toLowerCase().trim(),
         passwordHash,
         fullName: ValidationUtils.sanitizeString(data.fullName),
         phoneNumber: data.phoneNumber ? ValidationUtils.sanitizeString(data.phoneNumber) : null,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         gender: data.gender as any,
         nationality: data.nationality ? ValidationUtils.sanitizeString(data.nationality) : null,
-        role: 'CANDIDATE' // Security: always CANDIDATE for public registration
+        role: 'CANDIDATE' // Always CANDIDATE for public registration
       },
       select: {
         id: true,
@@ -140,9 +136,10 @@ export class AuthService {
     const verificationToken = AuthUtils.generateEmailVerificationToken(user.id);
 
     // TODO: Send email verification
+    // For now, just log the token
     console.log(`Email verification token for ${user.email}: ${verificationToken}`);
 
-    // Generate access & refresh tokens
+    // Generate tokens
     const accessToken = AuthUtils.generateAccessToken(user.id, user.role);
     const refreshToken = AuthUtils.generateRefreshToken(user.id);
 
@@ -162,20 +159,18 @@ export class AuthService {
     };
   }
 
-  // ========================================
-  // REFRESH TOKEN
-  // ========================================
+  // Refresh token
   async refreshToken(data: RefreshTokenDto) {
     // Verify refresh token
     const tokenResult = AuthUtils.verifyRefreshToken(data.refreshToken);
     if (!tokenResult.valid || !tokenResult.payload) {
-      throw createAuthError('Refresh token không hợp lệ', 'AUTH_REFRESH_TOKEN_INVALID');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_REFRESH_TOKEN_INVALID);
     }
 
     const { sub: userId } = tokenResult.payload;
 
     // Find user
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({ 
       where: { id: userId },
       select: {
         id: true,
@@ -187,16 +182,16 @@ export class AuthService {
     });
 
     if (!user) {
-      throw createNotFoundError('Người dùng');
+      throw AuthUtils.createAuthError(ErrorCode.BIZ_USER_NOT_FOUND);
     }
 
-    // Check account status
+    // Check if user is still active
     if (!user.isActive) {
-      throw createAuthError('Tài khoản chưa được kích hoạt', 'AUTH_ACCOUNT_INACTIVE');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_ACCOUNT_INACTIVE);
     }
 
     if (user.isLocked) {
-      throw createAuthError('Tài khoản đã bị khóa', 'AUTH_ACCOUNT_LOCKED');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_ACCOUNT_LOCKED);
     }
 
     // Generate new tokens
@@ -209,33 +204,31 @@ export class AuthService {
     };
   }
 
-  // ========================================
-  // VERIFY EMAIL
-  // ========================================
+  // Verify email
   async verifyEmail(data: VerifyEmailDto) {
     // Verify email verification token
     const tokenResult = AuthUtils.verifyToken(data.token);
     if (!tokenResult.valid || !tokenResult.payload) {
-      throw createAuthError('Token xác thực không hợp lệ', 'AUTH_EMAIL_VERIFICATION_FAILED');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_EMAIL_VERIFICATION_FAILED);
     }
 
     const { sub: userId, type } = tokenResult.payload;
     if (type !== 'email_verification') {
-      throw createAuthError('Token xác thực không hợp lệ', 'AUTH_EMAIL_VERIFICATION_FAILED');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_EMAIL_VERIFICATION_FAILED);
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({ 
       where: { id: userId },
       select: { id: true, isEmailVerified: true }
     });
 
     if (!user) {
-      throw createNotFoundError('Người dùng');
+      throw AuthUtils.createAuthError(ErrorCode.BIZ_USER_NOT_FOUND);
     }
 
     if (user.isEmailVerified) {
-      throw createConflictError('Email đã được xác thực');
+      throw AuthUtils.createAuthError(ErrorCode.BIZ_EMAIL_ALREADY_VERIFIED);
     }
 
     // Update email verification status
@@ -247,67 +240,66 @@ export class AuthService {
     return { message: 'Email verified successfully' };
   }
 
-  // ========================================
-  // FORGOT PASSWORD
-  // ========================================
+  // Forgot password
   async forgotPassword(data: ForgotPasswordDto) {
-    // NOTE: Email validation already handled by Zod in DTO
-    const email = ValidationUtils.normalizeEmail(data.email);
+    // Validate email format
+    if (!AuthUtils.validateEmail(data.email)) {
+      throw AuthUtils.createValidationError(ErrorCode.VAL_INVALID_EMAIL);
+    }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
+    const user = await prisma.user.findUnique({ 
+      where: { email: data.email.toLowerCase().trim() },
       select: { id: true, email: true }
     });
 
     if (user) {
       // Generate password reset token
       const resetToken = AuthUtils.generatePasswordResetToken(user.id);
-
-      // TODO: Send password reset email
+      
+      // TODO: Send password reset email with token
+      // For now, just log the token (in production, send via email)
       console.log(`Password reset token for ${user.email}: ${resetToken}`);
     }
 
-    // Always return success to prevent email enumeration
+    // Always return success message to prevent email enumeration
     return { message: 'If the email exists, you will receive password reset instructions' };
   }
 
-  // ========================================
-  // RESET PASSWORD
-  // ========================================
+  // Reset password
   async resetPassword(data: ResetPasswordDto) {
     // Validate password strength
     const passwordValidation = ValidationUtils.isValidPassword(data.password);
     if (!passwordValidation.isValid) {
-      throw createValidationError(passwordValidation.errors);
+      throw new AppError(passwordValidation.errors.join(', '), 400, true, ErrorCode.VAL_INVALID_PASSWORD);
     }
 
     // Verify password reset token
     const tokenResult = AuthUtils.verifyToken(data.token);
     if (!tokenResult.valid || !tokenResult.payload) {
-      throw createAuthError('Token đặt lại mật khẩu không hợp lệ', 'AUTH_PASSWORD_RESET_TOKEN_INVALID');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_PASSWORD_RESET_TOKEN_INVALID);
     }
 
     const { sub: userId, type } = tokenResult.payload;
     if (type !== 'password_reset') {
-      throw createAuthError('Token đặt lại mật khẩu không hợp lệ', 'AUTH_PASSWORD_RESET_TOKEN_INVALID');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_PASSWORD_RESET_TOKEN_INVALID);
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({ 
       where: { id: userId },
       select: { id: true, isActive: true, isLocked: true }
     });
 
     if (!user) {
-      throw createNotFoundError('Người dùng');
+      throw AuthUtils.createAuthError(ErrorCode.BIZ_USER_NOT_FOUND);
     }
 
     if (!user.isActive) {
-      throw createAuthError('Tài khoản chưa được kích hoạt', 'AUTH_ACCOUNT_INACTIVE');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_ACCOUNT_INACTIVE);
     }
 
     if (user.isLocked) {
-      throw createAuthError('Tài khoản đã bị khóa', 'AUTH_ACCOUNT_LOCKED');
+      throw AuthUtils.createAuthError(ErrorCode.AUTH_ACCOUNT_LOCKED);
     }
 
     // Hash new password
@@ -322,45 +314,41 @@ export class AuthService {
     return { message: 'Password reset successfully' };
   }
 
-  // ========================================
-  // RESEND VERIFICATION
-  // ========================================
+  // Resend email verification
   async resendVerification(email: string) {
-    // Validate email
+    // Validate email format
     if (!ValidationUtils.isValidEmail(email)) {
-      throw createValidationError('Email không hợp lệ');
+      throw AuthUtils.createValidationError(ErrorCode.VAL_INVALID_EMAIL);
     }
 
-    const normalizedEmail = ValidationUtils.normalizeEmail(email);
-
     const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
+      where: { email: email.toLowerCase().trim() },
       select: { id: true, email: true, isEmailVerified: true }
     });
 
     if (!user) {
-      // Don't reveal if user exists (prevent email enumeration)
+      // Don't reveal if user exists or not (prevent email enumeration)
       return { message: 'If the email exists and is not verified, you will receive a verification link' };
     }
 
     if (user.isEmailVerified) {
-      throw createConflictError('Email đã được xác thực');
+      throw new AppError('Email đã được xác thực', 400, true, ErrorCode.BIZ_EMAIL_ALREADY_VERIFIED);
     }
 
     // Generate new verification token
     const verificationToken = AuthUtils.generateEmailVerificationToken(user.id);
 
     // TODO: Send email verification
+    // For now, just log the token
     console.log(`Email verification token for ${user.email}: ${verificationToken}`);
 
     return { message: 'Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.' };
   }
 
-  // ========================================
-  // LOGOUT
-  // ========================================
+  // Logout (client-side token removal)
   async logout() {
     // TODO: Implement token blacklisting if needed
+    // For now, client-side token removal is sufficient
     return { message: 'Logged out successfully' };
   }
 }

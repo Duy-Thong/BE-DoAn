@@ -1,14 +1,15 @@
 /**
- * Authentication Utilities
- * Professional auth utilities for JWT, password, validation, and security
+ * Authentication Utilities (Refactored)
+ * Focus ONLY on: JWT tokens, Password hashing, Token verification
+ *
+ * For validation → use ValidationUtils
+ * For errors → use error.ts helpers
  */
 
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { env } from '../config/env.js';
-import { ErrorCode, ErrorCodeUtils } from './error-codes.js';
-import { AppError } from './error.js';
 
 /**
  * JWT Token Types
@@ -18,7 +19,6 @@ export enum TokenType {
   REFRESH = 'refresh',
   EMAIL_VERIFICATION = 'email_verification',
   PASSWORD_RESET = 'password_reset',
-  API_KEY = 'api_key'
 }
 
 /**
@@ -41,44 +41,29 @@ export interface TokenOptions {
   expiresIn?: string;
   issuer?: string;
   audience?: string;
-  subject?: string;
   jti?: string;
 }
 
 /**
- * Password Validation Rules
+ * Token Verification Result
  */
-export interface PasswordRules {
-  minLength: number;
-  maxLength: number;
-  requireUppercase: boolean;
-  requireLowercase: boolean;
-  requireNumbers: boolean;
-  requireSpecialChars: boolean;
-  forbiddenPatterns: RegExp[];
+export interface TokenVerificationResult {
+  valid: boolean;
+  payload?: JWTPayload;
+  error?: string;
 }
 
 /**
  * Authentication Utilities Class
+ * Focused ONLY on authentication operations
  */
 export class AuthUtils {
-  // Default password rules
-  private static readonly DEFAULT_PASSWORD_RULES: PasswordRules = {
-    minLength: 8,
-    maxLength: 128,
-    requireUppercase: true,
-    requireLowercase: true,
-    requireNumbers: true,
-    requireSpecialChars: true,
-    forbiddenPatterns: [
-      /(.)\1{3,}/, // No 4+ consecutive identical characters
-      /123456|abcdef|qwerty/i, // No common sequences
-      /password|admin|user/i // No common words
-    ]
-  };
+  // ========================================
+  // JWT TOKEN OPERATIONS
+  // ========================================
 
   /**
-   * Generate JWT Token
+   * Generate JWT Token (Generic)
    */
   static generateToken(
     payload: Omit<JWTPayload, 'iat' | 'exp'>,
@@ -94,14 +79,13 @@ export class AuthUtils {
       expiresIn: options.expiresIn || '1h',
       issuer: options.issuer || 'recruitment-system',
       audience: options.audience || 'recruitment-app'
-      // Remove subject option since payload already has 'sub'
-    } as jwt.SignOptions;
+    };
 
     return jwt.sign(tokenPayload, env.JWT_SECRET, tokenOptions);
   }
 
   /**
-   * Generate Access Token
+   * Generate Access Token (15 minutes)
    */
   static generateAccessToken(userId: string, role: string, companyId?: string): string {
     return this.generateToken(
@@ -116,7 +100,7 @@ export class AuthUtils {
   }
 
   /**
-   * Generate Refresh Token
+   * Generate Refresh Token (7 days)
    */
   static generateRefreshToken(userId: string): string {
     return this.generateToken(
@@ -129,7 +113,7 @@ export class AuthUtils {
   }
 
   /**
-   * Generate Email Verification Token
+   * Generate Email Verification Token (24 hours)
    */
   static generateEmailVerificationToken(userId: string): string {
     return this.generateToken(
@@ -142,7 +126,7 @@ export class AuthUtils {
   }
 
   /**
-   * Generate Password Reset Token
+   * Generate Password Reset Token (1 hour)
    */
   static generatePasswordResetToken(userId: string): string {
     return this.generateToken(
@@ -155,9 +139,9 @@ export class AuthUtils {
   }
 
   /**
-   * Verify JWT Token
+   * Verify JWT Token (Generic)
    */
-  static verifyToken(token: string): { valid: boolean; payload?: JWTPayload; error?: string } {
+  static verifyToken(token: string): TokenVerificationResult {
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
       return { valid: true, payload: decoded };
@@ -175,7 +159,7 @@ export class AuthUtils {
   /**
    * Verify Access Token
    */
-  static verifyAccessToken(token: string): { valid: boolean; payload?: JWTPayload; error?: string } {
+  static verifyAccessToken(token: string): TokenVerificationResult {
     const result = this.verifyToken(token);
     if (result.valid && result.payload?.type === TokenType.ACCESS) {
       return result;
@@ -186,7 +170,7 @@ export class AuthUtils {
   /**
    * Verify Refresh Token
    */
-  static verifyRefreshToken(token: string): { valid: boolean; payload?: JWTPayload; error?: string } {
+  static verifyRefreshToken(token: string): TokenVerificationResult {
     const result = this.verifyToken(token);
     if (result.valid && result.payload?.type === TokenType.REFRESH) {
       return result;
@@ -195,7 +179,69 @@ export class AuthUtils {
   }
 
   /**
-   * Hash Password
+   * Extract Token from Authorization Header
+   */
+  static extractTokenFromHeader(authHeader: string | undefined): string | null {
+    if (!authHeader) return null;
+
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+      return null;
+    }
+
+    return parts[1];
+  }
+
+  /**
+   * Check if token is expired
+   */
+  static isTokenExpired(token: string): boolean {
+    try {
+      const decoded = jwt.decode(token) as JWTPayload;
+      if (!decoded || !decoded.exp) return true;
+      return Date.now() >= decoded.exp * 1000;
+    } catch {
+      return true;
+    }
+  }
+
+  /**
+   * Get token expiration time
+   */
+  static getTokenExpiration(token: string): Date | null {
+    try {
+      const decoded = jwt.decode(token) as JWTPayload;
+      if (!decoded || !decoded.exp) return null;
+      return new Date(decoded.exp * 1000);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Should rotate refresh token (if > 50% expired)
+   */
+  static shouldRotateRefreshToken(token: string): boolean {
+    try {
+      const decoded = jwt.decode(token) as JWTPayload;
+      if (!decoded || !decoded.exp || !decoded.iat) return false;
+
+      const now = Math.floor(Date.now() / 1000);
+      const tokenAge = now - decoded.iat;
+      const tokenLifetime = decoded.exp - decoded.iat;
+
+      return tokenAge > (tokenLifetime * 0.5);
+    } catch {
+      return true;
+    }
+  }
+
+  // ========================================
+  // PASSWORD OPERATIONS
+  // ========================================
+
+  /**
+   * Hash Password (bcrypt with 12 rounds)
    */
   static async hashPassword(password: string): Promise<string> {
     const saltRounds = 12;
@@ -209,56 +255,27 @@ export class AuthUtils {
     return bcrypt.compare(password, hashedPassword);
   }
 
-  /**
-   * Validate Password Strength
-   */
-  static validatePassword(password: string, rules: PasswordRules = this.DEFAULT_PASSWORD_RULES): {
-    isValid: boolean;
-    errors: string[];
-  } {
-    const errors: string[] = [];
-
-    // Length validation
-    if (password.length < rules.minLength) {
-      errors.push(`Password must be at least ${rules.minLength} characters long`);
-    }
-    if (password.length > rules.maxLength) {
-      errors.push(`Password must be no more than ${rules.maxLength} characters long`);
-    }
-
-    // Character requirements
-    if (rules.requireUppercase && !/[A-Z]/.test(password)) {
-      errors.push('Password must contain at least one uppercase letter');
-    }
-    if (rules.requireLowercase && !/[a-z]/.test(password)) {
-      errors.push('Password must contain at least one lowercase letter');
-    }
-    if (rules.requireNumbers && !/\d/.test(password)) {
-      errors.push('Password must contain at least one number');
-    }
-    if (rules.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      errors.push('Password must contain at least one special character');
-    }
-
-    // Forbidden patterns
-    for (const pattern of rules.forbiddenPatterns) {
-      if (pattern.test(password)) {
-        errors.push('Password contains forbidden patterns');
-        break;
-      }
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
-  }
+  // ========================================
+  // RANDOM TOKEN GENERATION
+  // ========================================
 
   /**
-   * Generate Secure Random Token
+   * Generate Secure Random Token (hex)
    */
   static generateSecureToken(length: number = 32): string {
     return crypto.randomBytes(length).toString('hex');
+  }
+
+  /**
+   * Generate OTP (One-Time Password)
+   */
+  static generateOTP(length: number = 6): string {
+    const digits = '0123456789';
+    let otp = '';
+    for (let i = 0; i < length; i++) {
+      otp += digits[Math.floor(Math.random() * digits.length)];
+    }
+    return otp;
   }
 
   /**
@@ -267,154 +284,6 @@ export class AuthUtils {
   static generateApiKey(prefix: string = 'ak'): string {
     const randomPart = this.generateSecureToken(32);
     return `${prefix}_${randomPart}`;
-  }
-
-  /**
-   * Extract Token from Authorization Header
-   */
-  static extractTokenFromHeader(authHeader: string | undefined): string | null {
-    if (!authHeader) return null;
-    
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      return null;
-    }
-    
-    return parts[1];
-  }
-
-  /**
-   * Validate Email Format
-   */
-  static validateEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  /**
-   * Validate Phone Number Format
-   */
-  static validatePhoneNumber(phone: string): boolean {
-    // International phone number format - remove all spaces and validate
-    const cleanPhone = phone.replace(/\s/g, '');
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    return phoneRegex.test(cleanPhone);
-  }
-
-  /**
-   * Sanitize Input
-   */
-  static sanitizeInput(input: string): string {
-    return input
-      .trim()
-      .replace(/[<>]/g, '') // Remove potential HTML tags
-      .replace(/['"]/g, '') // Remove quotes
-      .substring(0, 1000); // Limit length
-  }
-
-  /**
-   * Check for Suspicious Activity
-   */
-  static detectSuspiciousActivity(
-    email: string,
-    ip: string,
-    userAgent: string,
-    attempts: number
-  ): { isSuspicious: boolean; reasons: string[] } {
-    const reasons: string[] = [];
-
-    // Check for too many attempts
-    if (attempts > 5) {
-      reasons.push('Too many authentication attempts');
-    }
-
-    // Check for suspicious email patterns
-    if (email.includes('+') && email.split('+').length > 2) {
-      reasons.push('Suspicious email pattern');
-    }
-
-    // Check for suspicious user agent
-    if (!userAgent || userAgent.length < 10) {
-      reasons.push('Suspicious user agent');
-    }
-
-    // Check for common attack patterns
-    const suspiciousPatterns = [
-      /script/i,
-      /javascript/i,
-      /vbscript/i,
-      /onload/i,
-      /onerror/i
-    ];
-
-    for (const pattern of suspiciousPatterns) {
-      if (pattern.test(email) || pattern.test(userAgent)) {
-        reasons.push('Potential XSS attempt');
-        break;
-      }
-    }
-
-    return {
-      isSuspicious: reasons.length > 0,
-      reasons
-    };
-  }
-
-  /**
-   * Generate Rate Limit Key
-   */
-  static generateRateLimitKey(identifier: string, action: string): string {
-    return `rate_limit:${action}:${identifier}`;
-  }
-
-  /**
-   * Check Rate Limit
-   */
-  static async checkRateLimit(
-    key: string,
-    limit: number,
-    windowMs: number
-  ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
-    // This would typically use Redis or similar
-    // For now, return a mock implementation
-    return {
-      allowed: true,
-      remaining: limit - 1,
-      resetTime: Date.now() + windowMs
-    };
-  }
-
-  /**
-   * Create Authentication Error
-   */
-  static createAuthError(code: ErrorCode, message?: string): AppError {
-    const errorMessage = message || ErrorCodeUtils.getErrorMessage(code);
-    const statusCode = ErrorCodeUtils.getStatusCode(code);
-    
-    return new AppError(errorMessage, statusCode, true, code);
-  }
-
-  /**
-   * Create Validation Error
-   */
-  static createValidationError(code: ErrorCode, details?: any): AppError {
-    const errorMessage = ErrorCodeUtils.getErrorMessage(code);
-    return new AppError(errorMessage, 400, true, code, details);
-  }
-
-  /**
-   * Create Authorization Error
-   */
-  static createAuthorizationError(code: ErrorCode, message?: string): AppError {
-    const errorMessage = message || ErrorCodeUtils.getErrorMessage(code);
-    return new AppError(errorMessage, 403, true, code);
-  }
-
-  /**
-   * Hash Sensitive Data for Logging
-   */
-  static hashSensitiveData(data: string): string {
-    return crypto.createHash('sha256').update(data).digest('hex').substring(0, 8);
   }
 
   /**
@@ -439,7 +308,30 @@ export class AuthUtils {
   }
 
   /**
-   * Create Secure Cookie Options
+   * Generate Recovery Code
+   */
+  static generateRecoveryCode(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+  }
+
+  // ========================================
+  // SECURITY UTILITIES
+  // ========================================
+
+  /**
+   * Hash Sensitive Data for Logging
+   */
+  static hashSensitiveData(data: string): string {
+    return crypto.createHash('sha256').update(data).digest('hex').substring(0, 8);
+  }
+
+  /**
+   * Get Secure Cookie Options
    */
   static getSecureCookieOptions(isProduction: boolean = true): {
     httpOnly: boolean;
@@ -455,72 +347,31 @@ export class AuthUtils {
     };
   }
 
+  // ========================================
+  // RATE LIMITING (Mock - use Redis in production)
+  // ========================================
+
   /**
-   * Generate OTP (One-Time Password)
+   * Generate Rate Limit Key
    */
-  static generateOTP(length: number = 6): string {
-    const digits = '0123456789';
-    let otp = '';
-    for (let i = 0; i < length; i++) {
-      otp += digits[Math.floor(Math.random() * digits.length)];
-    }
-    return otp;
+  static generateRateLimitKey(identifier: string, action: string): string {
+    return `rate_limit:${action}:${identifier}`;
   }
 
   /**
-   * Generate Recovery Code
+   * Check Rate Limit (Mock implementation)
+   * TODO: Use Redis in production
    */
-  static generateRecoveryCode(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return code;
-  }
-
-  /**
-   * Validate Token Expiration
-   */
-  static isTokenExpired(token: string): boolean {
-    try {
-      const decoded = jwt.decode(token) as JWTPayload;
-      if (!decoded || !decoded.exp) return true;
-      return Date.now() >= decoded.exp * 1000;
-    } catch {
-      return true;
-    }
-  }
-
-  /**
-   * Get Token Expiration Time
-   */
-  static getTokenExpiration(token: string): Date | null {
-    try {
-      const decoded = jwt.decode(token) as JWTPayload;
-      if (!decoded || !decoded.exp) return null;
-      return new Date(decoded.exp * 1000);
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Refresh Token Rotation
-   */
-  static shouldRotateRefreshToken(token: string): boolean {
-    try {
-      const decoded = jwt.decode(token) as JWTPayload;
-      if (!decoded || !decoded.exp || !decoded.iat) return false;
-      
-      const now = Math.floor(Date.now() / 1000);
-      const tokenAge = now - decoded.iat;
-      const tokenLifetime = decoded.exp - decoded.iat;
-      
-      // Rotate if token is more than 50% expired
-      return tokenAge > (tokenLifetime * 0.5);
-    } catch {
-      return true;
-    }
+  static async checkRateLimit(
+    key: string,
+    limit: number,
+    windowMs: number
+  ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+    // Mock implementation - always allow for now
+    return {
+      allowed: true,
+      remaining: limit - 1,
+      resetTime: Date.now() + windowMs
+    };
   }
 }

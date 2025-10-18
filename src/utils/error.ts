@@ -97,6 +97,39 @@ export class AIServiceError extends AppError {
   }
 }
 
+/**
+ * Helper function to create validation error from validation result
+ */
+export function createValidationError(errors: string | string[]): ValidationError {
+  const message = Array.isArray(errors) ? errors.join(', ') : errors;
+  return new ValidationError(message);
+}
+
+/**
+ * Helper function to create auth error with ErrorCode
+ */
+export function createAuthError(message: string, code?: string): AuthenticationError {
+  const error = new AuthenticationError(message);
+  if (code) {
+    (error as any).code = code;
+  }
+  return error;
+}
+
+/**
+ * Helper function to create not found error
+ */
+export function createNotFoundError(resource: string): NotFoundError {
+  return new NotFoundError(`${resource} không tồn tại`);
+}
+
+/**
+ * Helper function to create conflict error
+ */
+export function createConflictError(message: string): ConflictError {
+  return new ConflictError(message);
+}
+
 export class ErrorUtils {
   /**
    * Check if error is operational

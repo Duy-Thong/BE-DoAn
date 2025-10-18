@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 /**
- * Validation utility functions
+ * Validation Utility Functions
+ * Centralized validation for all data types
+ *
+ * Use this for ALL validation needs in the application
  */
 
 export class ValidationUtils {
@@ -183,11 +186,127 @@ export class ValidationUtils {
    */
   static validateSearchQuery(query?: string): string {
     if (!query) return '';
-    
+
     return query
       .trim()
       .substring(0, 100) // Limit search query length
       .replace(/[<>]/g, '') // Remove potential HTML tags
       .replace(/['"]/g, ''); // Remove quotes
   }
+
+  /**
+   * Normalize email (lowercase and trim)
+   */
+  static normalizeEmail(email: string): string {
+    return email.toLowerCase().trim();
+  }
+
+  /**
+   * Check if value is empty
+   */
+  static isEmpty(value: any): boolean {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') return value.trim().length === 0;
+    if (Array.isArray(value)) return value.length === 0;
+    if (typeof value === 'object') return Object.keys(value).length === 0;
+    return false;
+  }
+
+  /**
+   * Validate required field
+   */
+  static isRequired(value: any, fieldName: string): void {
+    if (this.isEmpty(value)) {
+      throw new Error(`${fieldName} là bắt buộc`);
+    }
+  }
+
+  /**
+   * Validate min length
+   */
+  static minLength(value: string, min: number, fieldName: string): void {
+    if (value.length < min) {
+      throw new Error(`${fieldName} phải có ít nhất ${min} ký tự`);
+    }
+  }
+
+  /**
+   * Validate max length
+   */
+  static maxLength(value: string, max: number, fieldName: string): void {
+    if (value.length > max) {
+      throw new Error(`${fieldName} không được vượt quá ${max} ký tự`);
+    }
+  }
+
+  /**
+   * Validate UUID format
+   */
+  static isValidUUID(uuid: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  }
+
+  /**
+   * Validate number range
+   */
+  static isInRange(value: number, min: number, max: number): boolean {
+    return value >= min && value <= max;
+  }
+
+  /**
+   * Validate if string contains only alphanumeric characters
+   */
+  static isAlphanumeric(value: string): boolean {
+    return /^[a-zA-Z0-9]+$/.test(value);
+  }
+
+  /**
+   * Validate if string contains only letters
+   */
+  static isAlpha(value: string): boolean {
+    return /^[a-zA-Z]+$/.test(value);
+  }
+
+  /**
+   * Validate if string contains only numbers
+   */
+  static isNumeric(value: string): boolean {
+    return /^[0-9]+$/.test(value);
+  }
+
+  /**
+   * Sanitize HTML (remove all tags)
+   */
+  static sanitizeHTML(input: string): string {
+    return input.replace(/<[^>]*>/g, '');
+  }
+
+  /**
+   * Validate and sanitize input for safety
+   */
+  static validateAndSanitize(input: string, options?: {
+    maxLength?: number;
+    allowHtml?: boolean;
+    allowQuotes?: boolean;
+  }): string {
+    let sanitized = input.trim();
+
+    // Remove HTML if not allowed
+    if (!options?.allowHtml) {
+      sanitized = sanitized.replace(/[<>]/g, '');
+    }
+
+    // Remove quotes if not allowed
+    if (!options?.allowQuotes) {
+      sanitized = sanitized.replace(/['"]/g, '');
+    }
+
+    // Limit length
+    const maxLength = options?.maxLength || 1000;
+    sanitized = sanitized.substring(0, maxLength);
+
+    return sanitized;
+  }
 }
+
