@@ -1,5 +1,6 @@
 import { prisma } from '../../loaders/prisma.js';
 import { AuthUtils } from '../../utils/auth.js';
+import { ValidationUtils } from '../../utils/validate.js';
 import { ErrorCode, ErrorCodeUtils } from '../../utils/error-codes.js';
 import { AppError } from '../../utils/error.js';
 import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto } from './dto.js';
@@ -84,9 +85,15 @@ export class AuthService {
       throw AuthUtils.createValidationError(ErrorCode.VAL_INVALID_EMAIL);
     }
 
+    // Validate password strength
+    const passwordValidation = ValidationUtils.isValidPassword(data.password);
+    if (!passwordValidation.isValid) {
+      throw new AppError(passwordValidation.errors.join(', '), 400, true, ErrorCode.VAL_INVALID_PASSWORD);
+    }
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ 
-      where: { email: data.email.toLowerCase().trim() } 
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email.toLowerCase().trim() }
     });
     if (existingUser) {
       throw AuthUtils.createAuthError(ErrorCode.BIZ_USER_ALREADY_EXISTS);
@@ -95,17 +102,24 @@ export class AuthService {
     // Hash password
     const passwordHash = await AuthUtils.hashPassword(data.password);
 
-    // Create user
+    // Validate phone number if provided
+    if (data.phoneNumber && data.phoneNumber.trim()) {
+      if (!ValidationUtils.isValidVietnamesePhone(data.phoneNumber)) {
+        throw new AppError('Số điện thoại không hợp lệ', 400, true, ErrorCode.VAL_INVALID_FORMAT);
+      }
+    }
+
+    // Create user with CANDIDATE role (security: users cannot choose their role during registration)
     const user = await prisma.user.create({
       data: {
         email: data.email.toLowerCase().trim(),
         passwordHash,
-        fullName: AuthUtils.sanitizeInput(data.fullName),
-        phoneNumber: data.phoneNumber ? AuthUtils.sanitizeInput(data.phoneNumber) : null,
+        fullName: ValidationUtils.sanitizeString(data.fullName),
+        phoneNumber: data.phoneNumber ? ValidationUtils.sanitizeString(data.phoneNumber) : null,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         gender: data.gender as any,
-        nationality: data.nationality ? AuthUtils.sanitizeInput(data.nationality) : null,
-        role: data.role
+        nationality: data.nationality ? ValidationUtils.sanitizeString(data.nationality) : null,
+        role: 'CANDIDATE' // Always CANDIDATE for public registration
       },
       select: {
         id: true,
@@ -118,12 +132,12 @@ export class AuthService {
       }
     });
 
+    // Generate email verification token
+    const verificationToken = AuthUtils.generateEmailVerificationToken(user.id);
+
     // TODO: Send email verification
-    // For now, we'll mark as verified by default
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { isEmailVerified: true }
-    });
+    // For now, just log the token
+    console.log(`Email verification token for ${user.email}: ${verificationToken}`);
 
     // Generate tokens
     const accessToken = AuthUtils.generateAccessToken(user.id, user.role);
@@ -139,8 +153,9 @@ export class AuthService {
         role: user.role,
         companyId: user.companyId,
         companyRole: user.companyRole,
-        isEmailVerified: true
-      }
+        isEmailVerified: user.isEmailVerified
+      },
+      message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.'
     };
   }
 
@@ -253,9 +268,9 @@ export class AuthService {
   // Reset password
   async resetPassword(data: ResetPasswordDto) {
     // Validate password strength
-    const passwordValidation = AuthUtils.validatePassword(data.password);
+    const passwordValidation = ValidationUtils.isValidPassword(data.password);
     if (!passwordValidation.isValid) {
-      throw AuthUtils.createValidationError(ErrorCode.VAL_INVALID_PASSWORD, passwordValidation.errors);
+      throw new AppError(passwordValidation.errors.join(', '), 400, true, ErrorCode.VAL_INVALID_PASSWORD);
     }
 
     // Verify password reset token
@@ -297,6 +312,37 @@ export class AuthService {
     });
 
     return { message: 'Password reset successfully' };
+  }
+
+  // Resend email verification
+  async resendVerification(email: string) {
+    // Validate email format
+    if (!ValidationUtils.isValidEmail(email)) {
+      throw AuthUtils.createValidationError(ErrorCode.VAL_INVALID_EMAIL);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+      select: { id: true, email: true, isEmailVerified: true }
+    });
+
+    if (!user) {
+      // Don't reveal if user exists or not (prevent email enumeration)
+      return { message: 'If the email exists and is not verified, you will receive a verification link' };
+    }
+
+    if (user.isEmailVerified) {
+      throw new AppError('Email đã được xác thực', 400, true, ErrorCode.BIZ_EMAIL_ALREADY_VERIFIED);
+    }
+
+    // Generate new verification token
+    const verificationToken = AuthUtils.generateEmailVerificationToken(user.id);
+
+    // TODO: Send email verification
+    // For now, just log the token
+    console.log(`Email verification token for ${user.email}: ${verificationToken}`);
+
+    return { message: 'Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.' };
   }
 
   // Logout (client-side token removal)

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthService } from './service.js';
-import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto } from './dto.js';
+import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto, ResendVerificationDto } from './dto.js';
 import { ResponseUtils } from '../../utils/response.js';
 import { ErrorCodeUtils } from '../../utils/error-codes.js';
 import { AppError } from '../../utils/error.js';
@@ -145,6 +145,30 @@ export class AuthController {
         return ResponseUtils.error(res, errorResponse.error, error.statusCode);
       }
       
+      // Handle validation errors
+      if (error instanceof Error && error.name === 'ZodError') {
+        const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);
+        return ResponseUtils.error(res, errorResponse.error, 400);
+      }
+
+      const errorResponse = ErrorCodeUtils.createErrorResponse('SYS_INTERNAL_ERROR' as any);
+      return ResponseUtils.internalError(res, errorResponse.error);
+    }
+  }
+
+  // Resend Verification Email
+  async resendVerification(req: Request, res: Response) {
+    try {
+      const data = ResendVerificationDto.parse(req.body);
+      const result = await authService.resendVerification(data.email);
+
+      ResponseUtils.success(res, null, result.message);
+    } catch (error) {
+      if (error instanceof AppError) {
+        const errorResponse = ErrorCodeUtils.createErrorResponse(error.code!);
+        return ResponseUtils.error(res, errorResponse.error, error.statusCode);
+      }
+
       // Handle validation errors
       if (error instanceof Error && error.name === 'ZodError') {
         const errorResponse = ErrorCodeUtils.createErrorResponse('VAL_INVALID_FORMAT' as any);

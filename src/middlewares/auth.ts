@@ -235,6 +235,23 @@ export class AuthMiddleware {
   };
 
   /**
+   * Require Recruiter or Admin Role
+   */
+  static requireRecruiterOrAdmin = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      const errorResponse = ErrorCodeUtils.createErrorResponse(ErrorCode.AUTH_TOKEN_MISSING);
+      return ResponseUtils.unauthorized(res, errorResponse.error);
+    }
+
+    if (req.user.role !== UserRole.RECRUITER && req.user.role !== UserRole.ADMIN) {
+      const errorResponse = ErrorCodeUtils.createErrorResponse(ErrorCode.AUTHZ_ROLE_REQUIRED);
+      return ResponseUtils.forbidden(res, errorResponse.error);
+    }
+
+    next();
+  };
+
+  /**
    * Require Any of Multiple Roles
    */
   static requireAnyRole = (roles: UserRole[]) => {
@@ -463,6 +480,7 @@ export const {
   requireAdmin,
   requireRecruiter,
   requireCandidate,
+  requireRecruiterOrAdmin,
   requireAnyRole,
   requireEmailVerification,
   requireCompanyAccess,

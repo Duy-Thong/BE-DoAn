@@ -1,23 +1,46 @@
 import { Router } from 'express';
-import { authMiddleware } from '../../middlewares/auth.js';
-import { listCompanies, createCompany, getCompany, updateCompany, deleteCompany, getUserCompanies } from './controller.js';
+import { AuthMiddleware } from '../../middlewares/auth.js';
+import {
+  listCompanies,
+  createCompany,
+  getCompany,
+  updateCompany,
+  deleteCompany,
+  verifyCompany,
+  unverifyCompany,
+  activateCompany,
+  deactivateCompany,
+  getCompanyJobs,
+  getCompanyUsers,
+  assignUserToCompany,
+  removeUserFromCompany,
+  updateUserRole,
+} from './controller.js';
 
 export const companiesRouter = Router();
 
-// Public routes
+// Public routes - Anyone can view
 companiesRouter.get('/', listCompanies);
 companiesRouter.get('/:id', getCompany);
+companiesRouter.get('/:id/jobs', getCompanyJobs);
 
-// Protected routes
-companiesRouter.use(authMiddleware);
+// Protected routes - Require authentication
+companiesRouter.use(AuthMiddleware.authenticate);
 
-// Company management
-companiesRouter.post('/', createCompany);
-companiesRouter.put('/:id', updateCompany);
-companiesRouter.delete('/:id', deleteCompany);
-companiesRouter.get('/user/my-companies', getUserCompanies);
+// CRUD routes
+companiesRouter.post('/', AuthMiddleware.requireRecruiterOrAdmin, createCompany);
+companiesRouter.put('/:id', AuthMiddleware.requireRecruiterOrAdmin, updateCompany);
+companiesRouter.delete('/:id', AuthMiddleware.requireAdmin, deleteCompany);
 
-// Company nested submodules routes
-import socialMediaRoutes from './social-media/routes.js';
-companiesRouter.use('/:companyId/social-media', socialMediaRoutes);
+// Admin routes - Company status management
+companiesRouter.post('/:id/verify', AuthMiddleware.requireAdmin, verifyCompany);
+companiesRouter.post('/:id/unverify', AuthMiddleware.requireAdmin, unverifyCompany);
+companiesRouter.post('/:id/activate', AuthMiddleware.requireAdmin, activateCompany);
+companiesRouter.post('/:id/deactivate', AuthMiddleware.requireAdmin, deactivateCompany);
+
+// Member management
+companiesRouter.get('/:id/users', getCompanyUsers);
+companiesRouter.post('/:id/users', AuthMiddleware.requireRecruiterOrAdmin, assignUserToCompany);
+companiesRouter.put('/:id/users/:userId/role', AuthMiddleware.requireRecruiterOrAdmin, updateUserRole);
+companiesRouter.delete('/:id/users/:userId', AuthMiddleware.requireRecruiterOrAdmin, removeUserFromCompany);
 

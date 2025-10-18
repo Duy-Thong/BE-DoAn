@@ -1,14 +1,97 @@
+import { Prisma, CompanyRole } from '../../generated/prisma/index.js';
 import { prisma } from '../../loaders/prisma.js';
-import type { CreateCompanyDto, UpdateCompanyDto, CreateSocialMediaDto, UpdateSocialMediaDto } from './dto.js';
+import { AppError } from '../../utils/error.js';
+import type { CreateCompanyDto, UpdateCompanyDto, CompanyQueryDto } from './dto.js';
 
 export class CompaniesService {
-  async list() {
-    return prisma.company.findMany({ 
-      where: { isActive: true },
-      select: { 
-        id: true, 
-        name: true, 
-        website: true, 
+  // List companies with pagination and filtering
+  async list(query: CompanyQueryDto) {
+    const { page, limit, search, industry, companySize, isVerified, isActive, isEmailVerified, sortBy, sortOrder } =
+      query;
+
+    const where: Prisma.CompanyWhereInput = {};
+
+    // Apply filters
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { industry: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (industry !== undefined) where.industry = { contains: industry, mode: 'insensitive' };
+    if (companySize !== undefined) where.companySize = companySize;
+    if (isVerified !== undefined) where.isVerified = isVerified;
+    if (isActive !== undefined) where.isActive = isActive;
+    if (isEmailVerified !== undefined) where.isEmailVerified = isEmailVerified;
+
+    const skip = (page - 1) * limit;
+
+    const [companies, total] = await Promise.all([
+      prisma.company.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        select: {
+          id: true,
+          name: true,
+          website: true,
+          description: true,
+          industry: true,
+          companySize: true,
+          foundedYear: true,
+          address: true,
+          phone: true,
+          email: true,
+          logoUrl: true,
+          isVerified: true,
+          isActive: true,
+          isEmailVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              jobs: true,
+              users: true,
+            },
+          },
+        },
+      }),
+      prisma.company.count({ where }),
+    ]);
+
+    return {
+      data: companies,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Create a new company
+  async create(input: CreateCompanyDto) {
+    const company = await prisma.company.create({
+      data: {
+        name: input.name,
+        website: input.website,
+        description: input.description,
+        industry: input.industry,
+        companySize: input.companySize,
+        foundedYear: input.foundedYear,
+        address: input.address,
+        phone: input.phone,
+        email: input.email,
+        logoUrl: input.logoUrl,
+      },
+      select: {
+        id: true,
+        name: true,
+        website: true,
         description: true,
         industry: true,
         companySize: true,
@@ -21,282 +104,300 @@ export class CompaniesService {
         isActive: true,
         isEmailVerified: true,
         createdAt: true,
-        updatedAt: true
-      } 
-    });
-  }
-
-  async create(input: CreateCompanyDto, userId: string) {
-    // Tạo company
-    const company = await prisma.company.create({ 
-      data: { 
-        name: input.name, 
-        website: input.website ?? null, 
-        description: input.description ?? null,
-        industry: input.industry ?? null,
-        companySize: input.companySize as any ?? null,
-        foundedYear: input.foundedYear ?? null,
-        address: input.address ?? null,
-        phone: input.phone ?? null,
-        email: input.email ?? null,
-        logoUrl: input.logoUrl ?? null,
-        isVerified: false, // Cần được admin xác minh
-        isActive: true,
-        isEmailVerified: false
-      } 
-    });
-
-    // Thêm user làm OWNER của company
-    await prisma.companyMember.create({
-      data: {
-        userId,
-        companyId: company.id,
-        role: 'OWNER'
-      }
+        updatedAt: true,
+      },
     });
 
     return company;
   }
 
+  // Get company by ID
   async getById(id: string) {
-    return prisma.company.findUnique({ 
+    const company = await prisma.company.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        website: true,
+        description: true,
+        industry: true,
+        companySize: true,
+        foundedYear: true,
+        address: true,
+        phone: true,
+        email: true,
+        logoUrl: true,
+        isVerified: true,
+        isActive: true,
+        isEmailVerified: true,
+        createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
-            jobs: {
-              where: {
-                isActive: true,
-                isApproved: true
-              }
-            },
-            members: true
-          }
-        }
-      }
+            jobs: true,
+            users: true,
+          },
+        },
+        users: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            companyRole: true,
+            joinedAt: true,
+          },
+          take: 10,
+        },
+      },
     });
-  }
 
-  async update(id: string, input: UpdateCompanyDto, userId: string) {
-    // Kiểm tra quyền truy cập
-    const hasPermission = await this.checkCompanyPermission(id, userId, ['OWNER', 'MANAGER']);
-    if (!hasPermission) {
-      throw new Error('Insufficient permissions to update company');
+    if (!company) {
+      throw new AppError('Công ty không tồn tại', 404);
     }
 
-    const data: any = {};
+    return company;
+  }
+
+  // Update company
+  async update(id: string, input: UpdateCompanyDto) {
+    // Check if company exists
+    const existingCompany = await prisma.company.findUnique({
+      where: { id },
+    });
+
+    if (!existingCompany) {
+      throw new AppError('Công ty không tồn tại', 404);
+    }
+
+    const data: Prisma.CompanyUpdateInput = {};
+
     if (input.name !== undefined) data.name = input.name;
-    if (input.website !== undefined) data.website = input.website ?? null;
-    if (input.description !== undefined) data.description = input.description ?? null;
-    if (input.industry !== undefined) data.industry = input.industry ?? null;
-    if (input.companySize !== undefined) data.companySize = input.companySize as any ?? null;
-    if (input.foundedYear !== undefined) data.foundedYear = input.foundedYear ?? null;
-    if (input.address !== undefined) data.address = input.address ?? null;
-    if (input.phone !== undefined) data.phone = input.phone ?? null;
-    if (input.email !== undefined) data.email = input.email ?? null;
-    if (input.logoUrl !== undefined) data.logoUrl = input.logoUrl ?? null;
+    if (input.website !== undefined) data.website = input.website;
+    if (input.description !== undefined) data.description = input.description;
+    if (input.industry !== undefined) data.industry = input.industry;
+    if (input.companySize !== undefined) data.companySize = input.companySize;
+    if (input.foundedYear !== undefined) data.foundedYear = input.foundedYear;
+    if (input.address !== undefined) data.address = input.address;
+    if (input.phone !== undefined) data.phone = input.phone;
+    if (input.email !== undefined) data.email = input.email;
+    if (input.logoUrl !== undefined) data.logoUrl = input.logoUrl;
     if (input.isVerified !== undefined) data.isVerified = input.isVerified;
     if (input.isActive !== undefined) data.isActive = input.isActive;
     if (input.isEmailVerified !== undefined) data.isEmailVerified = input.isEmailVerified;
 
-    return prisma.company.update({ 
-      where: { id }, 
+    const company = await prisma.company.update({
+      where: { id },
       data,
-      include: {
-        _count: {
-          select: {
-            jobs: true,
-            members: true
-          }
-        }
-      }
+      select: {
+        id: true,
+        name: true,
+        website: true,
+        description: true,
+        industry: true,
+        companySize: true,
+        foundedYear: true,
+        address: true,
+        phone: true,
+        email: true,
+        logoUrl: true,
+        isVerified: true,
+        isActive: true,
+        isEmailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
+
+    return company;
   }
 
-  async remove(id: string, userId: string) {
-    // Chỉ OWNER mới được xóa company
-    const hasPermission = await this.checkCompanyPermission(id, userId, ['OWNER']);
-    if (!hasPermission) {
-      throw new Error('Only company owner can delete the company');
+  // Delete company
+  async remove(id: string) {
+    const company = await prisma.company.findUnique({
+      where: { id },
+    });
+
+    if (!company) {
+      throw new AppError('Công ty không tồn tại', 404);
     }
 
-    // Xóa tất cả dữ liệu liên quan
-    await prisma.$transaction(async (tx) => {
-      // Xóa applications
-      await tx.application.deleteMany({
-        where: {
-          job: {
-            companyId: id
-          }
-        }
-      });
-
-      // Xóa job views
-      await tx.jobView.deleteMany({
-        where: {
-          job: {
-            companyId: id
-          }
-        }
-      });
-
-      // Xóa saved jobs
-      await tx.savedJob.deleteMany({
-        where: {
-          job: {
-            companyId: id
-          }
-        }
-      });
-
-      // Xóa social media
-      await tx.socialMedia.deleteMany({
-        where: {
-          ownerType: 'Company',
-          ownerId: id
-        }
-      });
-
-      // Xóa jobs
-      await tx.job.deleteMany({
-        where: { companyId: id }
-      });
-
-      // Xóa company members
-      await tx.companyMember.deleteMany({
-        where: { companyId: id }
-      });
-
-      // Xóa company
-      await tx.company.delete({
-        where: { id }
-      });
-    });
-  }
-
-  // Kiểm tra quyền truy cập company
-  private async checkCompanyPermission(companyId: string, userId: string, requiredRoles: any[]) {
-    const member = await prisma.companyMember.findFirst({
-      where: {
-        userId,
-        companyId,
-        role: { in: requiredRoles }
-      }
+    await prisma.company.delete({
+      where: { id },
     });
 
-    return !!member;
+    return { message: 'Xóa công ty thành công' };
   }
 
-  // Lấy danh sách companies của user
-  async getUserCompanies(userId: string) {
-    const memberships = await prisma.companyMember.findMany({
-      where: { userId },
-      include: {
-        company: {
-          include: {
-            _count: {
-              select: {
-                jobs: {
-                  where: {
-                    isActive: true,
-                    isApproved: true
-                  }
-                },
-                members: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        joinedAt: 'desc'
-      }
+  // Additional methods
+  async verifyCompany(id: string) {
+    return this.update(id, { isVerified: true });
+  }
+
+  async unverifyCompany(id: string) {
+    return this.update(id, { isVerified: false });
+  }
+
+  async activateCompany(id: string) {
+    return this.update(id, { isActive: true });
+  }
+
+  async deactivateCompany(id: string) {
+    return this.update(id, { isActive: false });
+  }
+
+  // Get company's jobs
+  async getCompanyJobs(id: string, page = 1, limit = 10) {
+    const company = await prisma.company.findUnique({
+      where: { id },
     });
 
-    return memberships.map(membership => ({
-      ...membership.company,
-      userRole: membership.role,
-      joinedAt: membership.joinedAt
-    }));
-  }
-
-  // Social Media Management
-  async getSocialMedia(companyId: string) {
-    return prisma.socialMedia.findMany({
-      where: {
-        ownerType: 'Company',
-        ownerId: companyId
-      },
-      orderBy: { createdAt: 'asc' }
-    });
-  }
-
-  async createSocialMedia(companyId: string, userId: string, input: CreateSocialMediaDto) {
-    // Check permission
-    const hasPermission = await this.checkCompanyPermission(companyId, userId, ['OWNER', 'MANAGER', 'RECRUITER']);
-    if (!hasPermission) {
-      throw new Error('Insufficient permissions to manage social media');
+    if (!company) {
+      throw new AppError('Công ty không tồn tại', 404);
     }
 
-    return prisma.socialMedia.create({
+    const skip = (page - 1) * limit;
+
+    const [jobs, total] = await Promise.all([
+      prisma.job.findMany({
+        where: { companyId: id },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          location: true,
+          industry: true,
+          experienceLevel: true,
+          type: true,
+          salary: true,
+          urgent: true,
+          isActive: true,
+          expiresAt: true,
+          applicationCount: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.job.count({ where: { companyId: id } }),
+    ]);
+
+    return {
+      data: jobs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Get company's users/members
+  async getCompanyUsers(id: string, page = 1, limit = 10) {
+    const company = await prisma.company.findUnique({
+      where: { id },
+    });
+
+    if (!company) {
+      throw new AppError('Công ty không tồn tại', 404);
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: { companyId: id },
+        skip,
+        take: limit,
+        orderBy: { joinedAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          companyRole: true,
+          joinedAt: true,
+          isActive: true,
+        },
+      }),
+      prisma.user.count({ where: { companyId: id } }),
+    ]);
+
+    return {
+      data: users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Assign user to company
+  async assignUser(companyId: string, userId: string, companyRole: CompanyRole = CompanyRole.VIEWER) {
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) {
+      throw new AppError('Công ty không tồn tại', 404);
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new AppError('Người dùng không tồn tại', 404);
+    }
+
+    if (user.companyId) {
+      throw new AppError('Người dùng đã thuộc về một công ty khác', 400);
+    }
+
+    return prisma.user.update({
+      where: { id: userId },
       data: {
-        platform: input.platform,
-        url: input.url,
-        isVerified: input.isVerified,
-        ownerType: 'Company',
-        ownerId: companyId
-      }
+        companyId,
+        companyRole,
+        joinedAt: new Date(),
+      },
     });
   }
 
-  async updateSocialMedia(companyId: string, userId: string, socialMediaId: string, input: UpdateSocialMediaDto) {
-    // Check permission
-    const hasPermission = await this.checkCompanyPermission(companyId, userId, ['OWNER', 'MANAGER', 'RECRUITER']);
-    if (!hasPermission) {
-      throw new Error('Insufficient permissions to manage social media');
+  // Remove user from company
+  async removeUser(companyId: string, userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.companyId !== companyId) {
+      throw new AppError('Người dùng không thuộc về công ty này', 400);
     }
 
-    // Verify social media belongs to company
-    const socialMedia = await prisma.socialMedia.findFirst({
-      where: {
-        id: socialMediaId,
-        ownerType: 'Company',
-        ownerId: companyId
-      }
-    });
-
-    if (!socialMedia) {
-      throw new Error('Social media not found or access denied');
-    }
-
-    return prisma.socialMedia.update({
-      where: { id: socialMediaId },
-      data: input
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        companyId: null,
+        companyRole: null,
+        joinedAt: null,
+      },
     });
   }
 
-  async deleteSocialMedia(companyId: string, userId: string, socialMediaId: string) {
-    // Check permission
-    const hasPermission = await this.checkCompanyPermission(companyId, userId, ['OWNER', 'MANAGER', 'RECRUITER']);
-    if (!hasPermission) {
-      throw new Error('Insufficient permissions to manage social media');
+  // Update user role in company
+  async updateUserRole(companyId: string, userId: string, companyRole: CompanyRole) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.companyId !== companyId) {
+      throw new AppError('Người dùng không thuộc về công ty này', 400);
     }
 
-    // Verify social media belongs to company
-    const socialMedia = await prisma.socialMedia.findFirst({
-      where: {
-        id: socialMediaId,
-        ownerType: 'Company',
-        ownerId: companyId
-      }
-    });
-
-    if (!socialMedia) {
-      throw new Error('Social media not found or access denied');
-    }
-
-    return prisma.socialMedia.delete({
-      where: { id: socialMediaId }
+    return prisma.user.update({
+      where: { id: userId },
+      data: { companyRole },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        companyRole: true,
+        joinedAt: true,
+        isActive: true,
+      },
     });
   }
 }

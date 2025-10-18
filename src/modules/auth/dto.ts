@@ -30,8 +30,9 @@ export const RegisterDto = z.object({
   phoneNumber: phoneSchema,
   dateOfBirth: z.string().datetime().optional().or(z.literal('')),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']).optional(),
-  nationality: z.string().max(100, 'Nationality too long').optional().or(z.literal('')),
-  role: z.enum(['CANDIDATE', 'RECRUITER', 'ADMIN']).default('CANDIDATE')
+  nationality: z.string().max(100, 'Nationality too long').optional().or(z.literal(''))
+  // Note: role is NOT allowed in registration - always defaults to CANDIDATE
+  // Only admins can assign roles via user creation endpoint
 });
 export type RegisterDto = z.infer<typeof RegisterDto>;
 
@@ -89,3 +90,8 @@ export const MessageResponse = z.object({
   message: z.string()
 });
 export type MessageResponse = z.infer<typeof MessageResponse>;
+
+export const ResendVerificationDto = z.object({
+  email: emailSchema
+});
+export type ResendVerificationDto = z.infer<typeof ResendVerificationDto>;

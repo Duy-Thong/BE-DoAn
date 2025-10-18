@@ -1,34 +1,63 @@
 import { z } from 'zod';
+import { CompanySize } from '../../generated/prisma/index.js';
 
+// Create Company DTO
 export const CreateCompanyDto = z.object({
   name: z.string().min(1, 'Tên công ty không được để trống'),
-  website: z.string().url('Website không hợp lệ').optional(),
-  description: z.string().optional(),
-  industry: z.string().optional(),
-  companySize: z.enum(['STARTUP', 'SMALL', 'MEDIUM', 'LARGE', 'ENTERPRISE']).optional(),
-  foundedYear: z.number().int().min(1800).max(new Date().getFullYear()).optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email('Email không hợp lệ').optional(),
-  logoUrl: z.string().url('Logo URL không hợp lệ').optional(),
+  website: z.string().url('Website không hợp lệ').optional().nullable(),
+  description: z.string().optional().nullable(),
+  industry: z.string().optional().nullable(),
+  companySize: z.nativeEnum(CompanySize).optional().nullable(),
+  foundedYear: z.coerce.number().int().min(1800).max(new Date().getFullYear()).optional().nullable(),
+  address: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  email: z.string().email('Email không hợp lệ').optional().nullable(),
+  logoUrl: z.string().url('Logo URL không hợp lệ').optional().nullable(),
 });
 export type CreateCompanyDto = z.infer<typeof CreateCompanyDto>;
 
-export const UpdateCompanyDto = CreateCompanyDto.partial().extend({
+// Update Company DTO
+export const UpdateCompanyDto = z.object({
+  name: z.string().min(1, 'Tên công ty không được để trống').optional(),
+  website: z.string().url('Website không hợp lệ').optional().nullable(),
+  description: z.string().optional().nullable(),
+  industry: z.string().optional().nullable(),
+  companySize: z.nativeEnum(CompanySize).optional().nullable(),
+  foundedYear: z.coerce.number().int().min(1800).max(new Date().getFullYear()).optional().nullable(),
+  address: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  email: z.string().email('Email không hợp lệ').optional().nullable(),
+  logoUrl: z.string().url('Logo URL không hợp lệ').optional().nullable(),
   isVerified: z.boolean().optional(),
   isActive: z.boolean().optional(),
   isEmailVerified: z.boolean().optional(),
 });
 export type UpdateCompanyDto = z.infer<typeof UpdateCompanyDto>;
 
-export const CompanyResponse = z.object({
+// Query/Filter DTO
+export const CompanyQueryDto = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().optional(),
+  industry: z.string().optional(),
+  companySize: z.nativeEnum(CompanySize).optional(),
+  isVerified: z.coerce.boolean().optional(),
+  isActive: z.coerce.boolean().optional(),
+  isEmailVerified: z.coerce.boolean().optional(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'name']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+export type CompanyQueryDto = z.infer<typeof CompanyQueryDto>;
+
+// Response DTO
+export const CompanyResponseDto = z.object({
   id: z.string(),
   name: z.string(),
   website: z.string().nullable(),
   description: z.string().nullable(),
   industry: z.string().nullable(),
-  companySize: z.enum(['STARTUP', 'SMALL', 'MEDIUM', 'LARGE', 'ENTERPRISE']).nullable(),
-  foundedYear: z.number().int().nullable(),
+  companySize: z.nativeEnum(CompanySize).nullable(),
+  foundedYear: z.number().nullable(),
   address: z.string().nullable(),
   phone: z.string().nullable(),
   email: z.string().nullable(),
@@ -39,26 +68,5 @@ export const CompanyResponse = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
 });
-export type CompanyResponse = z.infer<typeof CompanyResponse>;
-
-// Social Media DTOs
-export const CreateSocialMediaDto = z.object({
-  platform: z.string().min(1, 'Platform không được để trống'),
-  url: z.string().url('URL không hợp lệ'),
-  isVerified: z.boolean().default(false),
-});
-export type CreateSocialMediaDto = z.infer<typeof CreateSocialMediaDto>;
-
-export const UpdateSocialMediaDto = CreateSocialMediaDto.partial();
-export type UpdateSocialMediaDto = z.infer<typeof UpdateSocialMediaDto>;
-
-export const SocialMediaResponse = z.object({
-  id: z.string(),
-  platform: z.string(),
-  url: z.string(),
-  isVerified: z.boolean(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
-export type SocialMediaResponse = z.infer<typeof SocialMediaResponse>;
+export type CompanyResponseDto = z.infer<typeof CompanyResponseDto>;
 

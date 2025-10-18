@@ -37,13 +37,18 @@ authRouter.post('/forgot-password',
   authController.forgotPassword.bind(authController)
 );
 
-authRouter.post('/reset-password', 
+authRouter.post('/reset-password',
   AuthMiddleware.rateLimit(5, 60 * 1000), // 5 attempts per minute
   authController.resetPassword.bind(authController)
 );
 
+authRouter.post('/resend-verification',
+  AuthMiddleware.rateLimit(3, 60 * 60 * 1000), // 3 attempts per hour
+  authController.resendVerification.bind(authController)
+);
+
 // Protected routes (authentication required)
-authRouter.post('/logout', 
+authRouter.post('/logout',
   AuthMiddleware.authenticate,
   authController.logout.bind(authController)
 );
