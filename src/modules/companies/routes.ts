@@ -18,5 +18,6 @@ companiesRouter.delete('/:id', deleteCompany);
 companiesRouter.get('/user/my-companies', getUserCompanies);
 
 // Company nested submodules routes
-companiesRouter.use('/:companyId/social-media', require('./social-media/routes.js').default);
+import socialMediaRoutes from './social-media/routes.js';
+companiesRouter.use('/:companyId/social-media', socialMediaRoutes);
 

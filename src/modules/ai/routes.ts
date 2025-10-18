@@ -13,9 +13,12 @@ router.post('/embeddings/generate', aiController.generateEmbedding.bind(aiContro
 router.post('/recommendations/jobs', aiController.getJobRecommendations.bind(aiController));
 
 // Embedding submodule routes
-router.use('/embeddings', require('./embedding/routes.js').default);
+import embeddingRoutes from './embedding/routes.js';
+import recommendationsRoutes from './recommendations/routes.js';
+
+router.use('/embeddings', embeddingRoutes);
 
 // Recommendations submodule routes
-router.use('/recommendations', require('./recommendations/routes.js').default);
+router.use('/recommendations', recommendationsRoutes);
 
 export default router;

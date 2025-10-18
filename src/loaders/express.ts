@@ -22,6 +22,11 @@ import { notificationsRouter } from '../modules/notifications/routes.js';
 import { reviewsRouter } from '../modules/reviews/routes.js';
 import aiRouter from '../modules/ai/routes.js';
 
+// Job nested routes imports
+import jobRequirementsRoutes from '../modules/jobs/requirements/routes.js';
+import jobBenefitsRoutes from '../modules/jobs/benefits/routes.js';
+import jobSkillsRoutes from '../modules/jobs/skills/routes.js';
+
 export function createExpressApp() {
   const app = express();
 
@@ -41,9 +46,9 @@ export function createExpressApp() {
   app.use('/api/jobs', jobsRouter);
   
   // Job nested routes
-  app.use('/api/jobs', require('../modules/jobs/requirements/routes.js').default);
-  app.use('/api/jobs', require('../modules/jobs/benefits/routes.js').default);
-  app.use('/api/jobs', require('../modules/jobs/skills/routes.js').default);
+  app.use('/api/jobs', jobRequirementsRoutes);
+  app.use('/api/jobs', jobBenefitsRoutes);
+  app.use('/api/jobs', jobSkillsRoutes);
   app.use('/api/applications', applicationsRouter);
   app.use('/api/saved-jobs', savedJobsRouter);
   app.use('/api/job-alerts', jobAlertsRouter);

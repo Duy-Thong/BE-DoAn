@@ -1,3 +1,9 @@
+import dotenv from 'dotenv';
+import bcrypt from 'bcrypt';
+
+// Load environment variables FIRST, before importing PrismaClient
+dotenv.config({ path: '.env' });
+
 import { 
   PrismaClient, 
   UserRole, 
@@ -10,11 +16,6 @@ import {
   SkillLevel,
   NotificationType
 } from '../src/generated/prisma/index.js';
-import bcrypt from 'bcrypt';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
 
 const prisma = new PrismaClient();
 

@@ -18,15 +18,26 @@ router.delete('/:cvId', cvController.deleteCV.bind(cvController));
 router.post('/set-main', cvController.setMainCV.bind(cvController));
 
 // CV nested submodules routes
-router.use('/:cvId/work-experience', require('./work-experience/routes.js').default);
-router.use('/:cvId/education', require('./education/routes.js').default);
-router.use('/:cvId/languages', require('./languages/routes.js').default);
-router.use('/:cvId/skills', require('./skills/routes.js').default);
-router.use('/:cvId/certifications', require('./certifications/routes.js').default);
-router.use('/:cvId/projects', require('./projects/routes.js').default);
-router.use('/:cvId/achievements', require('./achievements/routes.js').default);
-router.use('/:cvId/references', require('./references/routes.js').default);
-router.use('/:cvId/activities', require('./activities/routes.js').default);
-router.use('/:cvId/social-media', require('./social-media/routes.js').default);
+import workExperienceRoutes from './work-experience/routes.js';
+import educationRoutes from './education/routes.js';
+import languagesRoutes from './languages/routes.js';
+import skillsRoutes from './skills/routes.js';
+import certificationsRoutes from './certifications/routes.js';
+import projectsRoutes from './projects/routes.js';
+import achievementsRoutes from './achievements/routes.js';
+import referencesRoutes from './references/routes.js';
+import activitiesRoutes from './activities/routes.js';
+import socialMediaRoutes from './social-media/routes.js';
+
+router.use('/:cvId/work-experience', workExperienceRoutes);
+router.use('/:cvId/education', educationRoutes);
+router.use('/:cvId/languages', languagesRoutes);
+router.use('/:cvId/skills', skillsRoutes);
+router.use('/:cvId/certifications', certificationsRoutes);
+router.use('/:cvId/projects', projectsRoutes);
+router.use('/:cvId/achievements', achievementsRoutes);
+router.use('/:cvId/references', referencesRoutes);
+router.use('/:cvId/activities', activitiesRoutes);
+router.use('/:cvId/social-media', socialMediaRoutes);
 
 export default router;

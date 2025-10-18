@@ -71,8 +71,13 @@ jobsRouter.get('/:id/applications', async (req, res) => {
 });
 
 // Job nested submodules routes
-jobsRouter.use('/:jobId/requirements', require('./requirements/routes.js').default);
-jobsRouter.use('/:jobId/benefits', require('./benefits/routes.js').default);
-jobsRouter.use('/:jobId/skills', require('./skills/routes.js').default);
-jobsRouter.use('/:jobId/views', require('./views/routes.js').default);
+import requirementsRoutes from './requirements/routes.js';
+import benefitsRoutes from './benefits/routes.js';
+import skillsRoutes from './skills/routes.js';
+import viewsRoutes from './views/routes.js';
+
+jobsRouter.use('/:jobId/requirements', requirementsRoutes);
+jobsRouter.use('/:jobId/benefits', benefitsRoutes);
+jobsRouter.use('/:jobId/skills', skillsRoutes);
+jobsRouter.use('/:jobId/views', viewsRoutes);
 
