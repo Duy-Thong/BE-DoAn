@@ -38,15 +38,15 @@
   ],
   "languages": [
     {
-      "language": "English",
+      "name": "English",
       "proficiency": "NATIVE"
     },
     {
-      "language": "Vietnamese",
+      "name": "Vietnamese",
       "proficiency": "PROFESSIONAL"
     },
     {
-      "language": "Japanese",
+      "name": "Japanese",
       "proficiency": "CONVERSATIONAL"
     }
   ],
@@ -113,46 +113,34 @@
       "name": "AWS Certified Solutions Architect",
       "issuer": "Amazon Web Services",
       "acquiredAt": "2023-03-15T00:00:00.000Z",
-      "expiryDate": "2026-03-15T00:00:00.000Z",
-      "credentialId": "AWS-CSA-123456",
-      "credentialUrl": "https://aws.amazon.com/verification/123456",
       "description": "Professional certification for AWS cloud architecture and solutions design"
     },
     {
       "name": "Google Cloud Professional Developer",
       "issuer": "Google Cloud",
       "acquiredAt": "2022-11-20T00:00:00.000Z",
-      "expiryDate": "2025-11-20T00:00:00.000Z",
-      "credentialId": "GCP-PD-789012",
-      "credentialUrl": "https://cloud.google.com/certification/verification/789012",
       "description": "Professional certification for Google Cloud Platform development"
     },
     {
       "name": "Certified Kubernetes Administrator",
       "issuer": "Cloud Native Computing Foundation",
       "acquiredAt": "2023-08-10T00:00:00.000Z",
-      "expiryDate": "2026-08-10T00:00:00.000Z",
-      "credentialId": "CKA-345678",
-      "credentialUrl": "https://cncf.io/certification/verification/345678",
       "description": "Certification for Kubernetes cluster administration and management"
     }
   ],
   "achievements": [
     {
       "title": "Employee of the Year 2023",
-      "issuer": "Tech Corp",
       "date": "2023-12-15T00:00:00.000Z",
       "description": "Recognized for outstanding performance and leadership in software development projects"
     },
     {
       "title": "Best Innovation Award",
-      "issuer": "StartupXYZ",
       "date": "2019-11-20T00:00:00.000Z",
       "description": "Awarded for developing innovative features that increased user engagement by 40%"
     },
     {
       "title": "Hackathon Winner",
-      "issuer": "Tech Conference 2022",
       "date": "2022-09-15T00:00:00.000Z",
       "description": "First place in 48-hour hackathon for building a real-time collaboration tool"
     }
@@ -162,34 +150,30 @@
       "name": "John Smith",
       "position": "Engineering Manager",
       "company": "Tech Corp",
-      "email": "john.smith@techcorp.com",
-      "phone": "+1-555-0123",
-      "relationship": "Former Manager"
+      "description": "Former Manager - can provide reference for technical leadership and team management skills"
     },
     {
       "name": "Sarah Johnson",
       "position": "CTO",
       "company": "StartupXYZ",
-      "email": "sarah.johnson@startupxyz.com",
-      "phone": "+1-555-0456",
-      "relationship": "Former Colleague"
+      "description": "Former Colleague - can provide reference for full-stack development and innovation"
     }
   ],
   "activities": [
     {
-      "name": "Open Source Contributor",
+      "title": "Open Source Contributor",
       "organization": "React Community",
       "startDate": "2020-01-01T00:00:00.000Z",
       "description": "Active contributor to React ecosystem, maintaining popular libraries and helping new developers"
     },
     {
-      "name": "Tech Meetup Organizer",
+      "title": "Tech Meetup Organizer",
       "organization": "Local Developer Community",
       "startDate": "2021-06-01T00:00:00.000Z",
       "description": "Organizing monthly tech meetups with 200+ attendees, featuring industry speakers and networking"
     },
     {
-      "name": "Mentor",
+      "title": "Mentor",
       "organization": "Code for Good",
       "startDate": "2022-03-01T00:00:00.000Z",
       "description": "Mentoring junior developers and students in software engineering best practices"

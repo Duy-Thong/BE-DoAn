@@ -492,7 +492,7 @@
                 <div class="cert-name">{{this.name}}</div>
                 <div class="cert-issuer">{{this.issuer}}</div>
               </div>
-              <div class="cert-date">{{formatDate this.issueDate}}</div>
+              <div class="cert-date">{{formatDate this.acquiredAt}}</div>
             </div>
             {{#if this.description}}
             <div class="work-description">{{this.description}}</div>
@@ -512,6 +512,78 @@
           <div class="language-item">
             <span class="language-name">{{this.language}}</span>
             <span class="language-level">{{this.proficiency}}</span>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Achievements Section -->
+      {{#if achievements}}
+      <div class="cv-section">
+        <h2 class="section-title">Achievements</h2>
+        <div class="section-content">
+          {{#each achievements}}
+          <div class="cert-item">
+            <div class="cert-header">
+              <div>
+                <div class="cert-name">{{this.title}}</div>
+                <div class="cert-issuer">{{this.issuer}}</div>
+              </div>
+              <div class="cert-date">{{formatDate this.date}}</div>
+            </div>
+            {{#if this.description}}
+            <div class="work-description">{{this.description}}</div>
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Activities Section -->
+      {{#if activities}}
+      <div class="cv-section">
+        <h2 class="section-title">Activities</h2>
+        <div class="section-content">
+          {{#each activities}}
+          <div class="work-item">
+            <div class="work-header">
+              <div>
+                <div class="work-title">{{this.name}}</div>
+                <div class="work-company">{{this.organization}}</div>
+              </div>
+              <div class="work-dates">
+                {{formatDate this.startDate}} - {{#if this.endDate}}{{formatDate
+                this.endDate}}{{else}}Present{{/if}}
+              </div>
+            </div>
+            {{#if this.description}}
+            <div class="work-description">{{this.description}}</div>
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- References Section -->
+      {{#if references}}
+      <div class="cv-section">
+        <h2 class="section-title">References</h2>
+        <div class="section-content">
+          {{#each references}}
+          <div class="work-item">
+            <div class="work-header">
+              <div>
+                <div class="work-title">{{this.name}}</div>
+                <div class="work-company">{{this.position}} at {{this.company}}</div>
+              </div>
+            </div>
+            <div class="work-description">
+              {{#if this.email}}📧 {{this.email}}{{/if}} {{#if this.phone}} | 📱
+              {{this.phone}}{{/if}} {{#if this.relationship}} | {{this.relationship}}{{/if}}
+            </div>
           </div>
           {{/each}}
         </div>

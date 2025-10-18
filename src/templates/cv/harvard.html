@@ -304,6 +304,99 @@
         font-style: italic;
       }
 
+      /* Achievements */
+      .achievement-item {
+        margin-bottom: 0.1in;
+      }
+
+      .achievement-header {
+        margin-bottom: 0.03in;
+      }
+
+      .achievement-title {
+        font-weight: bold;
+        font-size: 11px;
+        display: inline;
+      }
+
+      .achievement-date {
+        font-size: 10px;
+        float: right;
+        font-style: italic;
+      }
+
+      .achievement-issuer {
+        font-weight: bold;
+        font-size: 11px;
+        color: #333;
+        margin-bottom: 0.02in;
+      }
+
+      .achievement-description {
+        font-size: 10px;
+        line-height: 1.3;
+        margin-top: 0.02in;
+        text-align: justify;
+      }
+
+      /* Activities */
+      .activity-item {
+        margin-bottom: 0.1in;
+      }
+
+      .activity-header {
+        margin-bottom: 0.03in;
+      }
+
+      .activity-title {
+        font-weight: bold;
+        font-size: 11px;
+        display: inline;
+      }
+
+      .activity-dates {
+        font-size: 10px;
+        float: right;
+        font-style: italic;
+      }
+
+      .activity-organization {
+        font-weight: bold;
+        font-size: 11px;
+        color: #333;
+        margin-bottom: 0.02in;
+      }
+
+      .activity-description {
+        font-size: 10px;
+        line-height: 1.3;
+        margin-top: 0.02in;
+        text-align: justify;
+      }
+
+      /* References */
+      .reference-item {
+        margin-bottom: 0.1in;
+      }
+
+      .reference-name {
+        font-weight: bold;
+        font-size: 11px;
+        margin-bottom: 0.02in;
+      }
+
+      .reference-position {
+        font-weight: bold;
+        font-size: 11px;
+        color: #333;
+        margin-bottom: 0.02in;
+      }
+
+      .reference-contact {
+        font-size: 10px;
+        line-height: 1.3;
+      }
+
       /* Clear floats */
       .clearfix::after {
         content: '';
@@ -510,7 +603,7 @@
               <div class="cert-name">{{this.name}}</div>
               <span>, </span>
               <div class="cert-issuer">{{this.issuer}}</div>
-              <div class="cert-date">{{formatDateHarvard this.issueDate}}</div>
+              <div class="cert-date">{{formatDateHarvard this.acquiredAt}}</div>
             </div>
             {{#if this.description}}
             <div class="cert-description">{{this.description}}</div>
@@ -547,6 +640,70 @@
             <span class="publication-authors">{{this.authors}}</span>
             <span class="publication-venue">{{this.venue}}</span>
             <div class="publication-date">{{formatDateHarvard this.publicationDate}}</div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Achievements Section -->
+      {{#if achievements}}
+      <div class="cv-section">
+        <h2 class="section-title">ACHIEVEMENTS</h2>
+        <div class="section-content">
+          {{#each achievements}}
+          <div class="achievement-item clearfix">
+            <div class="achievement-header clearfix">
+              <div class="achievement-title">{{this.title}}</div>
+              <div class="achievement-date">{{formatDateHarvard this.date}}</div>
+            </div>
+            <div class="achievement-issuer">{{this.issuer}}</div>
+            {{#if this.description}}
+            <div class="achievement-description">{{this.description}}</div>
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Activities Section -->
+      {{#if activities}}
+      <div class="cv-section">
+        <h2 class="section-title">ACTIVITIES</h2>
+        <div class="section-content">
+          {{#each activities}}
+          <div class="activity-item clearfix">
+            <div class="activity-header clearfix">
+              <div class="activity-title">{{this.name}}</div>
+              <div class="activity-dates">
+                {{formatDateHarvard this.startDate}} - {{#if this.endDate}}{{formatDateHarvard
+                this.endDate}}{{else}}Present{{/if}}
+              </div>
+            </div>
+            <div class="activity-organization">{{this.organization}}</div>
+            {{#if this.description}}
+            <div class="activity-description">{{this.description}}</div>
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- References Section -->
+      {{#if references}}
+      <div class="cv-section">
+        <h2 class="section-title">REFERENCES</h2>
+        <div class="section-content">
+          {{#each references}}
+          <div class="reference-item">
+            <div class="reference-name">{{this.name}}</div>
+            <div class="reference-position">{{this.position}}, {{this.company}}</div>
+            <div class="reference-contact">
+              {{#if this.email}}{{this.email}}{{/if}} {{#if this.phone}} | {{this.phone}}{{/if}}
+              {{#if this.relationship}} | {{this.relationship}}{{/if}}
+            </div>
           </div>
           {{/each}}
         </div>

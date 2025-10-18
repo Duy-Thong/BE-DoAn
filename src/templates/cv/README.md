@@ -134,7 +134,7 @@ interface CVData {
   certifications: Array<{
     name: string;
     issuer: string;
-    issueDate: Date;
+    acquiredAt: Date;
     expiryDate: Date;
     credentialId: string;
     credentialUrl: string;

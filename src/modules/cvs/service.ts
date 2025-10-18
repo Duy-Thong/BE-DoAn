@@ -107,8 +107,58 @@ export class CVService {
           data: data.certifications.map(cert => ({
             name: cert.name,
             issuer: cert.issuer,
-            acquiredAt: new Date(cert.acquiredAt), // Sửa từ issueDate thành acquiredAt
+            acquiredAt: new Date(cert.acquiredAt),
             description: cert.description,
+            cvId: cv.id,
+          }))
+        });
+      }
+
+      // Tạo Languages nếu có
+      if (data.languages && data.languages.length > 0) {
+        await tx.language.createMany({
+          data: data.languages.map(lang => ({
+            name: lang.name,
+            level: lang.proficiency as any,
+            cvId: cv.id,
+          }))
+        });
+      }
+
+      // Tạo Achievements nếu có
+      if (data.achievements && data.achievements.length > 0) {
+        await tx.achievement.createMany({
+          data: data.achievements.map(achievement => ({
+            title: achievement.title,
+            acquiredAt: new Date(achievement.date),
+            description: achievement.description,
+            cvId: cv.id,
+          }))
+        });
+      }
+
+      // Tạo References nếu có
+      if (data.references && data.references.length > 0) {
+        await tx.reference.createMany({
+          data: data.references.map(ref => ({
+            name: ref.name,
+            position: ref.position,
+            company: ref.company,
+            description: ref.description,
+            cvId: cv.id,
+          }))
+        });
+      }
+
+      // Tạo Activities nếu có
+      if (data.activities && data.activities.length > 0) {
+        await tx.activity.createMany({
+          data: data.activities.map(activity => ({
+            title: activity.title,
+            organization: activity.organization,
+            startDate: new Date(activity.startDate),
+            endDate: activity.endDate ? new Date(activity.endDate) : null,
+            description: activity.description,
             cvId: cv.id,
           }))
         });
@@ -123,6 +173,10 @@ export class CVService {
           skills: true,
           projects: true,
           certifications: true,
+          languages: true,
+          achievements: true,
+          references: true,
+          activities: true,
         }
       });
     });
@@ -309,6 +363,76 @@ export class CVService {
         }
       }
 
+      // 6. Languages
+      if (data.languages !== undefined) {
+        await tx.language.deleteMany({
+          where: { cvId }
+        });
+        if (data.languages.length > 0) {
+          await tx.language.createMany({
+            data: data.languages.map(lang => ({
+              name: lang.name,
+              level: lang.proficiency as any,
+              cvId: cvId,
+            }))
+          });
+        }
+      }
+
+      // 7. Achievements
+      if (data.achievements !== undefined) {
+        await tx.achievement.deleteMany({
+          where: { cvId }
+        });
+        if (data.achievements.length > 0) {
+          await tx.achievement.createMany({
+            data: data.achievements.map(achievement => ({
+              title: achievement.title,
+              acquiredAt: new Date(achievement.date),
+              description: achievement.description,
+              cvId: cvId,
+            }))
+          });
+        }
+      }
+
+      // 8. References
+      if (data.references !== undefined) {
+        await tx.reference.deleteMany({
+          where: { cvId }
+        });
+        if (data.references.length > 0) {
+          await tx.reference.createMany({
+            data: data.references.map(ref => ({
+              name: ref.name,
+              position: ref.position,
+              company: ref.company,
+              description: ref.description,
+              cvId: cvId,
+            }))
+          });
+        }
+      }
+
+      // 9. Activities
+      if (data.activities !== undefined) {
+        await tx.activity.deleteMany({
+          where: { cvId }
+        });
+        if (data.activities.length > 0) {
+          await tx.activity.createMany({
+            data: data.activities.map(activity => ({
+              title: activity.title,
+              organization: activity.organization,
+              startDate: new Date(activity.startDate),
+              endDate: activity.endDate ? new Date(activity.endDate) : null,
+              description: activity.description,
+              cvId: cvId,
+            }))
+          });
+        }
+      }
+
       // Trả về CV với tất cả thông tin liên quan
       return await tx.cV.findUnique({
         where: { id: cvId },
@@ -318,6 +442,10 @@ export class CVService {
           skills: true,
           projects: true,
           certifications: true,
+          languages: true,
+          achievements: true,
+          references: true,
+          activities: true,
         }
       });
     });

@@ -63,16 +63,13 @@ export const projectItemDto = z.object({
 
 export const certificationItemDto = z.object({
   name: z.string().min(1, 'Tên chứng chỉ không được để trống'),
-  issuer: z.string().min(1, 'Tổ chức cấp không được để trống'),
+  issuer: z.string().optional(),
   acquiredAt: z.string().datetime('Ngày cấp không hợp lệ'),
-  expiryDate: z.string().datetime().optional(),
-  credentialId: z.string().optional(),
-  credentialUrl: z.string().url().optional(),
   description: z.string().optional(),
 });
 
 export const languageItemDto = z.object({
-  language: z.string().min(1, 'Tên ngôn ngữ không được để trống'),
+  name: z.string().min(1, 'Tên ngôn ngữ không được để trống'),
   proficiency: z.enum(['BASIC', 'CONVERSATIONAL', 'PROFESSIONAL', 'NATIVE'], {
     message: 'Trình độ ngôn ngữ không hợp lệ'
   }),
@@ -80,23 +77,20 @@ export const languageItemDto = z.object({
 
 export const achievementItemDto = z.object({
   title: z.string().min(1, 'Tên thành tích không được để trống'),
-  issuer: z.string().min(1, 'Tổ chức cấp không được để trống'),
   date: z.string().datetime('Ngày cấp không hợp lệ'),
   description: z.string().optional(),
 });
 
 export const referenceItemDto = z.object({
   name: z.string().min(1, 'Tên người tham khảo không được để trống'),
-  position: z.string().min(1, 'Chức vụ không được để trống'),
-  company: z.string().min(1, 'Công ty không được để trống'),
-  email: z.string().email('Email không hợp lệ'),
-  phone: z.string().optional(),
-  relationship: z.string().optional(),
+  position: z.string().optional(),
+  company: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export const activityItemDto = z.object({
-  name: z.string().min(1, 'Tên hoạt động không được để trống'),
-  organization: z.string().min(1, 'Tổ chức không được để trống'),
+  title: z.string().min(1, 'Tên hoạt động không được để trống'),
+  organization: z.string().optional(),
   startDate: z.string().datetime('Ngày bắt đầu không hợp lệ'),
   endDate: z.string().datetime().optional(),
   description: z.string().optional(),
