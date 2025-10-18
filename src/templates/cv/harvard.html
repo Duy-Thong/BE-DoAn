@@ -575,7 +575,12 @@
           {{#each projects}}
           <div class="project-item clearfix">
             <div class="project-header clearfix">
-              <div class="project-name">{{this.name}}</div>
+              <div>
+                <div class="project-name">{{this.name}}</div>
+                {{#if this.role}}
+                <div class="project-role">{{this.role}}</div>
+                {{/if}}
+              </div>
               <div class="project-dates">
                 {{formatDateHarvard this.startDate}} - {{#if this.endDate}}{{formatDateHarvard
                 this.endDate}}{{else}}Present{{/if}}
@@ -621,8 +626,13 @@
         <div class="section-content">
           {{#each languages}}
           <div class="language-item">
-            <span class="language-name">{{this.language}}</span>
-            <span class="language-level">{{this.proficiency}}</span>
+            <div>
+              <span class="language-name">{{this.name}}</span>
+              <span class="language-level">{{this.level}}</span>
+            </div>
+            {{#if this.description}}
+            <div class="language-description">{{this.description}}</div>
+            {{/if}}
           </div>
           {{/each}}
         </div>
@@ -657,7 +667,6 @@
               <div class="achievement-title">{{this.title}}</div>
               <div class="achievement-date">{{formatDateHarvard this.date}}</div>
             </div>
-            <div class="achievement-issuer">{{this.issuer}}</div>
             {{#if this.description}}
             <div class="achievement-description">{{this.description}}</div>
             {{/if}}
@@ -675,7 +684,7 @@
           {{#each activities}}
           <div class="activity-item clearfix">
             <div class="activity-header clearfix">
-              <div class="activity-title">{{this.name}}</div>
+              <div class="activity-title">{{this.title}}</div>
               <div class="activity-dates">
                 {{formatDateHarvard this.startDate}} - {{#if this.endDate}}{{formatDateHarvard
                 this.endDate}}{{else}}Present{{/if}}

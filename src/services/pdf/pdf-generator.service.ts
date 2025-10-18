@@ -60,10 +60,9 @@ export class PDFGeneratorService {
     Handlebars.registerHelper('formatDate', (date: string | Date) => {
       if (!date) return '';
       const d = new Date(date);
-      return d.toLocaleDateString('vi-VN', {
-        month: '2-digit',
-        year: 'numeric'
-      });
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${month}/${year}`;
     });
 
     // Get skill progress percentage
@@ -90,10 +89,9 @@ export class PDFGeneratorService {
     Handlebars.registerHelper('formatDateHarvard', (date: string | Date) => {
       if (!date) return '';
       const d = new Date(date);
-      return d.toLocaleDateString('en-US', {
-        month: '2-digit',
-        year: 'numeric'
-      });
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${month}/${year}`;
     });
 
     // Format phone number

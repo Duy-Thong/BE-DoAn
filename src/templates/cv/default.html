@@ -192,6 +192,12 @@
         font-weight: 500;
       }
 
+      .skill-years {
+        font-size: 10px;
+        color: #7f8c8d;
+        margin-left: 5px;
+      }
+
       .skill-level {
         font-size: 11px;
         color: #7f8c8d;
@@ -435,7 +441,12 @@
         <div class="skills-grid">
           {{#each skills}}
           <div class="skill-item">
-            <span class="skill-name">{{this.skillName}}</span>
+            <div>
+              <span class="skill-name">{{this.skillName}}</span>
+              {{#if this.yearsOfExperience}}
+              <span class="skill-years">({{this.yearsOfExperience}} years)</span>
+              {{/if}}
+            </div>
             <div style="display: flex; align-items: center">
               <span class="skill-level">{{this.level}}</span>
               <div class="skill-bar">
@@ -463,7 +474,12 @@
           {{#each projects}}
           <div class="project-item">
             <div class="project-header">
-              <div class="project-name">{{this.name}}</div>
+              <div>
+                <div class="project-name">{{this.name}}</div>
+                {{#if this.role}}
+                <div class="project-role">{{this.role}}</div>
+                {{/if}}
+              </div>
               <div class="project-dates">
                 {{formatDate this.startDate}} - {{#if this.endDate}}{{formatDate
                 this.endDate}}{{else}}Present{{/if}}
@@ -510,8 +526,13 @@
         <div class="section-content">
           {{#each languages}}
           <div class="language-item">
-            <span class="language-name">{{this.language}}</span>
-            <span class="language-level">{{this.proficiency}}</span>
+            <div>
+              <span class="language-name">{{this.name}}</span>
+              <span class="language-level">{{this.level}}</span>
+            </div>
+            {{#if this.description}}
+            <div class="language-description">{{this.description}}</div>
+            {{/if}}
           </div>
           {{/each}}
         </div>
@@ -528,7 +549,6 @@
             <div class="cert-header">
               <div>
                 <div class="cert-name">{{this.title}}</div>
-                <div class="cert-issuer">{{this.issuer}}</div>
               </div>
               <div class="cert-date">{{formatDate this.date}}</div>
             </div>
@@ -550,7 +570,7 @@
           <div class="work-item">
             <div class="work-header">
               <div>
-                <div class="work-title">{{this.name}}</div>
+                <div class="work-title">{{this.title}}</div>
                 <div class="work-company">{{this.organization}}</div>
               </div>
               <div class="work-dates">

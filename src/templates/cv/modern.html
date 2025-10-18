@@ -98,6 +98,12 @@
         margin-bottom: 3px;
       }
 
+      .skill-years {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 3px;
+      }
+
       .skill-bar {
         width: 100%;
         height: 6px;
@@ -372,7 +378,12 @@
           <h3 class="sidebar-title">Skills</h3>
           {{#each skills}}
           <div class="skill-item">
-            <div class="skill-name">{{this.skillName}}</div>
+            <div>
+              <div class="skill-name">{{this.skillName}}</div>
+              {{#if this.yearsOfExperience}}
+              <div class="skill-years">({{this.yearsOfExperience}} years)</div>
+              {{/if}}
+            </div>
             <div class="skill-bar">
               <div class="skill-progress" style="width: {{getSkillProgress this.level}}%"></div>
             </div>
@@ -388,7 +399,12 @@
           {{#each languages}}
           <div class="contact-item">
             <span>🗣️</span>
-            <span>{{this.language}} - {{this.proficiency}}</span>
+            <div>
+              <span>{{this.name}} - {{this.level}}</span>
+              {{#if this.description}}
+              <div class="language-description">{{this.description}}</div>
+              {{/if}}
+            </div>
           </div>
           {{/each}}
         </div>
@@ -468,7 +484,12 @@
           {{#each projects}}
           <div class="project-item">
             <div class="project-header">
-              <div class="project-name">{{this.name}}</div>
+              <div>
+                <div class="project-name">{{this.name}}</div>
+                {{#if this.role}}
+                <div class="project-role">{{this.role}}</div>
+                {{/if}}
+              </div>
               <div class="project-dates">
                 {{formatDate this.startDate}} - {{#if this.endDate}}{{formatDate
                 this.endDate}}{{else}}Present{{/if}}
@@ -511,8 +532,13 @@
           <h2 class="section-title">Languages</h2>
           {{#each languages}}
           <div class="language-item">
-            <span class="language-name">{{this.language}}</span>
-            <span class="language-level">{{this.proficiency}}</span>
+            <div>
+              <span class="language-name">{{this.name}}</span>
+              <span class="language-level">{{this.level}}</span>
+            </div>
+            {{#if this.description}}
+            <div class="language-description">{{this.description}}</div>
+            {{/if}}
           </div>
           {{/each}}
         </div>
@@ -527,7 +553,6 @@
             <div class="cert-header">
               <div>
                 <div class="cert-name">{{this.title}}</div>
-                <div class="cert-issuer">{{this.issuer}}</div>
               </div>
               <div class="cert-date">{{formatDate this.date}}</div>
             </div>
@@ -547,7 +572,7 @@
           <div class="work-item">
             <div class="work-header">
               <div>
-                <div class="work-title">{{this.name}}</div>
+                <div class="work-title">{{this.title}}</div>
                 <div class="work-company">{{this.organization}}</div>
               </div>
               <div class="work-dates">
