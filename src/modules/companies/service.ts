@@ -373,7 +373,7 @@ export class CompaniesService {
       where: { id: userId },
       data: {
         companyId: null,
-        companyRole: null,
+        companyRole:CompanyRole.VIEWER,
         joinedAt: null,
       },
     });
