@@ -1,0 +1,956 @@
+{
+	"info": {
+		"_postman_id": "c0df4ddd-79db-4efd-9218-7eece342139f",
+		"name": "Applications API",
+		"description": "Complete API collection for Applications module with authentication, test scripts, and environment variables",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30174302"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login as Candidate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Login successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has access token', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('accessToken');",
+									"    pm.expect(jsonData.data).to.have.property('user');",
+									"});",
+									"",
+									"// Save tokens to environment",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set('access_token', jsonData.data.accessToken);",
+									"    pm.environment.set('refresh_token', jsonData.data.refreshToken);",
+									"    pm.environment.set('user_id', jsonData.data.user.id);",
+									"    pm.environment.set('user_role', jsonData.data.user.role);",
+									"    ",
+									"    // Set token expiry (1 hour from now)",
+									"    const expiryTime = new Date().getTime() + (60 * 60 * 1000);",
+									"    pm.environment.set('token_expiry', expiryTime);",
+									"    ",
+									"    console.log('Logged in as:', jsonData.data.user.email);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{candidate_email}}\",\n  \"password\": \"{{candidate_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as a candidate user to get access token"
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Recruiter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Login successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set('recruiter_token', jsonData.data.accessToken);",
+									"    pm.environment.set('recruiter_id', jsonData.data.user.id);",
+									"    pm.environment.set('company_id', jsonData.data.user.companyId);",
+									"    console.log('Logged in as recruiter:', jsonData.data.user.email);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{recruiter_email}}\",\n  \"password\": \"{{recruiter_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as a recruiter to manage applications"
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Login successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set('admin_token', jsonData.data.accessToken);",
+									"    pm.environment.set('admin_id', jsonData.data.user.id);",
+									"    console.log('Logged in as admin:', jsonData.data.user.email);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as an admin to view all applications"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for different user roles"
+		},
+		{
+			"name": "Candidate Operations",
+			"item": [
+				{
+					"name": "Get My Applications",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains applications array', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Each application has required fields', function () {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.data.length > 0) {",
+									"        const app = jsonData.data[0];",
+									"        pm.expect(app).to.have.property('id');",
+									"        pm.expect(app).to.have.property('status');",
+									"        pm.expect(app).to.have.property('jobId');",
+									"        pm.expect(app).to.have.property('cvId');",
+									"        pm.expect(app).to.have.property('createdAt');",
+									"        pm.expect(app).to.have.property('job');",
+									"        pm.expect(app).to.have.property('cv');",
+									"    }",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/applications/mine",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"mine"
+							]
+						},
+						"description": "Get all applications submitted by the authenticated candidate"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Application created successfully', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data.status).to.equal('PENDING');",
+									"});",
+									"",
+									"// Save application ID for later use",
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set('application_id', jsonData.data.id);",
+									"    console.log('Application created with ID:', jsonData.data.id);",
+									"}"
+								]
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Check if job_id and cv_id are set",
+									"const jobId = pm.environment.get('job_id');",
+									"const cvId = pm.environment.get('cv_id');",
+									"",
+									"if (!jobId || !cvId) {",
+									"    console.warn('⚠️ Please set job_id and cv_id in environment variables');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jobId\": \"{{job_id}}\",\n  \"cvId\": \"{{cv_id}}\",\n  \"coverLetter\": \"I am very interested in this position and believe my skills and experience make me a strong candidate.\",\n  \"notes\": \"Available for interview next week\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/applications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications"
+							]
+						},
+						"description": "Submit a new job application with CV and optional cover letter"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Application updated successfully', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"coverLetter\": \"Updated cover letter with more details about my experience.\",\n  \"notes\": \"Updated availability - can start immediately\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/applications/{{application_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"{{application_id}}"
+							]
+						},
+						"description": "Update application details (only allowed for PENDING status)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Application deleted successfully', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/applications/{{application_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"{{application_id}}"
+							]
+						},
+						"description": "Delete application (only allowed for PENDING status)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Application by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Application details retrieved', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('job');",
+									"    pm.expect(jsonData.data).to.have.property('cv');",
+									"    pm.expect(jsonData.data.job).to.have.property('company');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/applications/{{application_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"{{application_id}}"
+							]
+						},
+						"description": "Get detailed information about a specific application"
+					},
+					"response": []
+				}
+			],
+			"description": "Operations available to candidates for managing their applications"
+		},
+		{
+			"name": "Recruiter Operations",
+			"item": [
+				{
+					"name": "Get All Applications (Recruiter)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains applications from company jobs', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    ",
+									"    // All applications should be from company's jobs",
+									"    if (jsonData.data.length > 0) {",
+									"        jsonData.data.forEach(app => {",
+									"            pm.expect(app).to.have.property('job');",
+									"        });",
+									"    }",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{recruiter_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/applications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications"
+							]
+						},
+						"description": "Get all applications for jobs belonging to recruiter's company"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Applications",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('All applications are for the specified job', function () {",
+									"    const jsonData = pm.response.json();",
+									"    const jobId = pm.environment.get('job_id');",
+									"    ",
+									"    if (jsonData.data.length > 0) {",
+									"        jsonData.data.forEach(app => {",
+									"            pm.expect(app.jobId).to.equal(jobId);",
+									"        });",
+									"    }",
+									"});",
+									"",
+									"pm.test('Applications include CV details', function () {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.data.length > 0) {",
+									"        const app = jsonData.data[0];",
+									"        pm.expect(app).to.have.property('cv');",
+									"        pm.expect(app.cv).to.have.property('fullName');",
+									"        pm.expect(app.cv).to.have.property('email');",
+									"        pm.expect(app.cv).to.have.property('phoneNumber');",
+									"    }",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{recruiter_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/applications/job/{{job_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"job",
+								"{{job_id}}"
+							]
+						},
+						"description": "Get all applications for a specific job"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Application Status - Accept",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Application status updated to ACCEPTED', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.status).to.equal('ACCEPTED');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{recruiter_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"ACCEPTED\",\n  \"notes\": \"Congratulations! We would like to schedule an interview.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/applications/{{application_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"{{application_id}}",
+								"status"
+							]
+						},
+						"description": "Accept an application and add notes for the candidate"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Application Status - Reject",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Application status updated to REJECTED', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.status).to.equal('REJECTED');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{recruiter_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"REJECTED\",\n  \"notes\": \"Thank you for applying. Unfortunately, we have decided to proceed with other candidates.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/applications/{{application_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"{{application_id}}",
+								"status"
+							]
+						},
+						"description": "Reject an application with feedback notes"
+					},
+					"response": []
+				}
+			],
+			"description": "Operations for recruiters to manage applications for their company's jobs",
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{recruiter_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "Admin Operations",
+			"item": [
+				{
+					"name": "Get All Applications (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Admin can view all applications', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    console.log('Total applications:', jsonData.data.length);",
+									"});",
+									"",
+									"pm.test('Applications include company information', function () {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.data.length > 0) {",
+									"        const app = jsonData.data[0];",
+									"        pm.expect(app.job).to.have.property('company');",
+									"        pm.expect(app.job.company).to.have.property('name');",
+									"    }",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/applications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications"
+							]
+						},
+						"description": "Admin can view all applications across all companies"
+					},
+					"response": []
+				}
+			],
+			"description": "Administrative operations for viewing all applications in the system",
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "Error Scenarios",
+			"item": [
+				{
+					"name": "Create Duplicate Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Error message indicates duplicate application', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error).to.include('đã ứng tuyển');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jobId\": \"{{job_id}}\",\n  \"cvId\": \"{{cv_id}}\",\n  \"coverLetter\": \"Duplicate application test\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/applications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications"
+							]
+						},
+						"description": "Test duplicate application validation"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Non-Pending Application",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Error indicates only PENDING can be updated', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error).to.include('PENDING');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"coverLetter\": \"Trying to update accepted/rejected application\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/applications/{{application_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"{{application_id}}"
+							]
+						},
+						"description": "Test that only PENDING applications can be updated"
+					},
+					"response": []
+				},
+				{
+					"name": "Unauthorized Access",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 401', function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test('Error indicates unauthorized', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error).to.exist;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/applications/mine",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"applications",
+								"mine"
+							]
+						},
+						"description": "Test authentication requirement"
+					},
+					"response": []
+				}
+			],
+			"description": "Test error handling and validation scenarios"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-refresh token if expired",
+					"const tokenExpiry = pm.environment.get('token_expiry');",
+					"const currentTime = new Date().getTime();",
+					"",
+					"if (!tokenExpiry || currentTime >= tokenExpiry) {",
+					"    console.log('Token expired or not set, requesting new token...');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test scripts",
+					"pm.test('Response time is less than 2000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+					"});",
+					"",
+					"pm.test('Response has correct content-type', function () {",
+					"    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000/api",
+			"type": "string"
+		},
+		{
+			"key": "application_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "job_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cv_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

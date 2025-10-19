@@ -1,0 +1,787 @@
+{
+	"info": {
+		"_postman_id": "1b794587-31eb-45c2-9dc2-af7490ab9033",
+		"name": "User Management APIs",
+		"description": "Complete User Management APIs including Authentication, CRUD operations, Profile management, and Admin functions for the Recruitment System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30174302"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"frontend.dev1@gmail.com\",\n  \"password\": \"password123\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/login",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"fullName\": \"New User\",\n  \"phoneNumber\": \"+84 123 456 789\",\n  \"role\": \"CANDIDATE\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/register",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get My Profile",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA4bnlvd2k5OHowOWI4IiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJSRUNSVUlURVIiLCJjb21wYW55SWQiOiJjbWd3ZXFsbXkwMDAzbnlvd2JvcDY2dzUwIiwiaWF0IjoxNzYwODAxOTkxLCJqdGkiOiIzZjRkNDQ0Zi0xN2YyLTRjY2QtOTM0ZC1jMzY0N2Y4OGVlZWYiLCJleHAiOjE3NjA4MDI4OTEsImF1ZCI6InJlY3J1aXRtZW50LWFwcCIsImlzcyI6InJlY3J1aXRtZW50LXN5c3RlbSJ9.VTSF7rddSkGAZ7-vIigET7l_P9IZ_vmIUukJukDoVJQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/me",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"me"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update My Profile",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA1bnlvd2N6YTlqd3B3IiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJDQU5ESURBVEUiLCJpYXQiOjE3NjA4MDE5NzEsImp0aSI6IjQyOGVjZGYyLWQ0NGYtNGNjNC1iZGQxLWU4N2EzN2ViNTNjNiIsImV4cCI6MTc2MDgwMjg3MSwiYXVkIjoicmVjcnVpdG1lbnQtYXBwIiwiaXNzIjoicmVjcnVpdG1lbnQtc3lzdGVtIn0.gVMJNJRSw1M4KNdMvEt8DDMmZ7RHJ9HtZ-Gfw7E0gqQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"fullName\": \"Vu Thi Bich Ngoc\",\n  \"phoneNumber\": \"+84 987 654 321\",\n  \"dateOfBirth\": \"1990-01-01T00:00:00.000Z\",\n  \"gender\": \"FEMALE\",\n  \"nationality\": \"Vietnamese\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/me",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"me"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Change Password",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA1bnlvd2N6YTlqd3B3IiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJDQU5ESURBVEUiLCJpYXQiOjE3NjA4MDE5NzEsImp0aSI6IjQyOGVjZGYyLWQ0NGYtNGNjNC1iZGQxLWU4N2EzN2ViNTNjNiIsImV4cCI6MTc2MDgwMjg3MSwiYXVkIjoicmVjcnVpdG1lbnQtYXBwIiwiaXNzIjoicmVjcnVpdG1lbnQtc3lzdGVtIn0.gVMJNJRSw1M4KNdMvEt8DDMmZ7RHJ9HtZ-Gfw7E0gqQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"currentPassword\": \"Password@123\",\n  \"newPassword\": \"Password@123\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/me/change-password",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"me",
+						"change-password"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Users (Admin)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA0bnlvd211NmhyZnQxIiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDgwMjI4NCwianRpIjoiMWM2NTEzMzEtNTZiYy00YjcyLTk2YzUtNGI0ZmQyYmRiNDNkIiwiZXhwIjoxNzYwODAzMTg0LCJhdWQiOiJyZWNydWl0bWVudC1hcHAiLCJpc3MiOiJyZWNydWl0bWVudC1zeXN0ZW0ifQ.eFQ4t3iWefAEiU0vj6TlGLcxnfgPNGfG47Dy7h4HNBo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users?page=1&limit=10&search=&role=RECRUITER&isActive=&sortBy=createdAt&sortOrder=desc",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						},
+						{
+							"key": "search",
+							"value": ""
+						},
+						{
+							"key": "role",
+							"value": "RECRUITER"
+						},
+						{
+							"key": "isActive",
+							"value": ""
+						},
+						{
+							"key": "isLocked",
+							"value": "",
+							"disabled": true
+						},
+						{
+							"key": "isEmailVerified",
+							"value": "",
+							"disabled": true
+						},
+						{
+							"key": "companyId",
+							"value": "",
+							"disabled": true
+						},
+						{
+							"key": "sortBy",
+							"value": "createdAt"
+						},
+						{
+							"key": "sortOrder",
+							"value": "desc"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User by ID",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA0bnlvd211NmhyZnQxIiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDgwMjk2MywianRpIjoiMmFjM2Q4NzAtOTFjZS00ZmE3LWIzYjQtMjc3YzYwNjJiMzMxIiwiZXhwIjoxNzYwODAzODYzLCJhdWQiOiJyZWNydWl0bWVudC1hcHAiLCJpc3MiOiJyZWNydWl0bWVudC1zeXN0ZW0ifQ.E8nvQ-WoHzzrZGVUHiMgvSit1T7Eob3lyKvAqg5lN3Q",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"{{user_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create User (Admin)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA0bnlvd211NmhyZnQxIiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDgwMzI2NCwianRpIjoiM2ViNzM2MmQtMTNlMC00ZDc5LWFmOTItOTA4YTc5YjEzOGI2IiwiZXhwIjoxNzYwODA0MTY0LCJhdWQiOiJyZWNydWl0bWVudC1hcHAiLCJpc3MiOiJyZWNydWl0bWVudC1zeXN0ZW0ifQ.Xt3wO8MXGdG5Wr88ElW3hpJX7tv3PU79lK8HGmSsyoM",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"admin.created@example.com\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Admin Created User\",\n  \"phoneNumber\": \"+84 111 222 333\",\n  \"role\": \"CANDIDATE\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update User (Admin)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA0bnlvd211NmhyZnQxIiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDgwMzI2NCwianRpIjoiM2ViNzM2MmQtMTNlMC00ZDc5LWFmOTItOTA4YTc5YjEzOGI2IiwiZXhwIjoxNzYwODA0MTY0LCJhdWQiOiJyZWNydWl0bWVudC1hcHAiLCJpc3MiOiJyZWNydWl0bWVudC1zeXN0ZW0ifQ.Xt3wO8MXGdG5Wr88ElW3hpJX7tv3PU79lK8HGmSsyoM",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n        \"fullName\": \"Created by admin\",\n        \"phoneNumber\": \"+84 111 222 333\",\n        \"dateOfBirth\": null,\n        \"gender\": \"MALE\",\n        \"nationality\": \"Vietnamese\",\n        \"role\": \"CANDIDATE\",\n        \"isActive\": true,\n        \"isLocked\": false,\n        \"isEmailVerified\": true,\n        \"lastLoginAt\": null,\n        \"avatarUrl\": null,\n        \"companyId\": null\n    }"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/cmgwgwf8d0001nyug90sls48k",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"cmgwgwf8d0001nyug90sls48k"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete User (Admin)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA0bnlvd211NmhyZnQxIiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDgwMzI2NCwianRpIjoiM2ViNzM2MmQtMTNlMC00ZDc5LWFmOTItOTA4YTc5YjEzOGI2IiwiZXhwIjoxNzYwODA0MTY0LCJhdWQiOiJyZWNydWl0bWVudC1hcHAiLCJpc3MiOiJyZWNydWl0bWVudC1zeXN0ZW0ifQ.Xt3wO8MXGdG5Wr88ElW3hpJX7tv3PU79lK8HGmSsyoM",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/users/cmgwer2hc0000nyp8tt7isrw9",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"cmgwer2hc0000nyp8tt7isrw9"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Lock User (Admin)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}/lock",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"{{user_id}}",
+						"lock"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Unlock User (Admin)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/users/cmgwgwf8d0001nyug90sls48k/lock",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"cmgwgwf8d0001nyug90sls48k",
+						"lock"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Verify Email (Admin)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}/verify-email",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"{{user_id}}",
+						"verify-email"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Refresh Token",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/refresh",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"refresh"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Logout",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/auth/logout",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"logout"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Forgot Password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"user@example.com\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/forgot-password",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"forgot-password"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Reset Password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"token\": \"reset_token_here\",\n  \"newPassword\": \"newpassword123\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/reset-password",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"reset-password"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Verify Email",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"token\": \"verification_token_here\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/verify-email",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"verify-email"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Resend Verification",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"user@example.com\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/auth/resend-verification",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"resend-verification"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search Users with Filters",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWd3ZXFsbjMwMDA1bnlvd2N6YTlqd3B3IiwidHlwZSI6ImFjY2VzcyIsInJvbGUiOiJDQU5ESURBVEUiLCJpYXQiOjE3NjA4MDM2ODcsImp0aSI6IjE4ODVlZGU0LTdmYzctNDZjOC04MTFmLTZjNTc5YjFhNWFkYSIsImV4cCI6MTc2MDgwNDU4NywiYXVkIjoicmVjcnVpdG1lbnQtYXBwIiwiaXNzIjoicmVjcnVpdG1lbnQtc3lzdGVtIn0.q3sKGNPm7tee7z4t_BIHBfXZGE5VymSjPjaO0cF6GCQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/users?page=1&limit=20&search=DUC&isActive=true",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "20"
+						},
+						{
+							"key": "search",
+							"value": "DUC"
+						},
+						{
+							"key": "role",
+							"value": "CANDIDATE",
+							"disabled": true
+						},
+						{
+							"key": "isActive",
+							"value": "true"
+						},
+						{
+							"key": "isLocked",
+							"value": "false",
+							"disabled": true
+						},
+						{
+							"key": "isEmailVerified",
+							"value": "true",
+							"disabled": true
+						},
+						{
+							"key": "sortBy",
+							"value": "fullName",
+							"disabled": true
+						},
+						{
+							"key": "sortOrder",
+							"value": "asc",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"description": "Base URL for the API server"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"description": "JWT access token for authentication"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"description": "JWT refresh token"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"description": "User ID for testing specific user operations"
+		},
+		{
+			"key": "company_id",
+			"value": "",
+			"description": "Company ID for testing company-related operations"
+		}
+	]
+}

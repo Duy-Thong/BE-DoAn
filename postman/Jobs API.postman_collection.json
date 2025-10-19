@@ -1,0 +1,1365 @@
+{
+	"info": {
+		"_postman_id": "4755e3e5-f668-48e2-8571-6e9e0f15799a",
+		"name": "Jobs API",
+		"description": "Complete API collection for Jobs module with authentication and nested data support",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30174302"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse response",
+									"const responseJson = pm.response.json();",
+									"",
+									"// Save tokens and user info to environment",
+									"if (responseJson.success && responseJson.data) {",
+									"    // Save access token",
+									"    if (responseJson.data.accessToken) {",
+									"        pm.environment.set('accessToken', responseJson.data.accessToken);",
+									"        console.log('Access token saved:', responseJson.data.accessToken.substring(0, 20) + '...');",
+									"    }",
+									"    ",
+									"    // Save refresh token",
+									"    if (responseJson.data.refreshToken) {",
+									"        pm.environment.set('refreshToken', responseJson.data.refreshToken);",
+									"        console.log('Refresh token saved');",
+									"    }",
+									"    ",
+									"    // Save user info",
+									"    if (responseJson.data.user) {",
+									"        const user = responseJson.data.user;",
+									"        pm.environment.set('userId', user.id);",
+									"        pm.environment.set('userEmail', user.email);",
+									"        pm.environment.set('userRole', user.role);",
+									"        ",
+									"        // Save company info if exists",
+									"        if (user.companyId) {",
+									"            pm.environment.set('companyId', user.companyId);",
+									"            pm.environment.set('companyRole', user.companyRole);",
+									"            console.log('Company ID saved:', user.companyId);",
+									"        }",
+									"        ",
+									"        console.log('User ID saved:', user.id);",
+									"        console.log('User role:', user.role);",
+									"    }",
+									"}",
+									"",
+									"// Test assertions",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has success flag', function () {",
+									"    pm.expect(responseJson).to.have.property('success');",
+									"    pm.expect(responseJson.success).to.be.true;",
+									"});",
+									"",
+									"pm.test('Response contains access token', function () {",
+									"    pm.expect(responseJson.data).to.have.property('accessToken');",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"recruiter1@techcorp.vn\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login to get access token. Update email and password with valid credentials."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"",
+									"if (responseJson.success && responseJson.data) {",
+									"    if (responseJson.data.accessToken) {",
+									"        pm.environment.set('accessToken', responseJson.data.accessToken);",
+									"        console.log('Access token refreshed');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Jobs - Public",
+			"item": [
+				{
+					"name": "List Jobs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has pagination', function () {",
+									"    pm.expect(responseJson).to.have.property('pagination');",
+									"});",
+									"",
+									"// Save first job ID for later use",
+									"if (responseJson.data && responseJson.data.length > 0) {",
+									"    pm.environment.set('jobId', responseJson.data[0].id);",
+									"    console.log('Job ID saved:', responseJson.data[0].id);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "developer",
+									"disabled": true
+								},
+								{
+									"key": "location",
+									"value": "Ha Noi",
+									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "FULL_TIME",
+									"disabled": true
+								},
+								{
+									"key": "experienceLevel",
+									"value": "SENIOR",
+									"disabled": true
+								},
+								{
+									"key": "remoteWork",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "urgent",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "featured",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "isActive",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "isApproved",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "minSalary",
+									"value": "1000",
+									"disabled": true
+								},
+								{
+									"key": "maxSalary",
+									"value": "5000",
+									"disabled": true
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt",
+									"disabled": true
+								},
+								{
+									"key": "sortOrder",
+									"value": "desc",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get list of jobs with pagination and filters. No authentication required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains job details', function () {",
+									"    pm.expect(responseJson.data).to.have.property('id');",
+									"    pm.expect(responseJson.data).to.have.property('title');",
+									"    pm.expect(responseJson.data).to.have.property('company');",
+									"});",
+									"",
+									"pm.test('Response contains nested data', function () {",
+									"    pm.expect(responseJson.data).to.have.property('requirements');",
+									"    pm.expect(responseJson.data).to.have.property('benefits');",
+									"    pm.expect(responseJson.data).to.have.property('jobSkills');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}"
+							]
+						},
+						"description": "Get detailed information about a specific job including company, requirements, benefits, and skills."
+					},
+					"response": []
+				},
+				{
+					"name": "Track Job View",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/view",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"view"
+							]
+						},
+						"description": "Track when a user views a job (increments view count)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Jobs - Protected",
+			"item": [
+				{
+					"name": "Create Job (with nested data)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"",
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (responseJson.data && responseJson.data.id) {",
+									"    pm.environment.set('createdJobId', responseJson.data.id);",
+									"    console.log('Created job ID:', responseJson.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Senior Backend Developer\",\n  \"description\": \"We are looking for an experienced backend developer to join our team.\",\n  \"location\": \"Ha Noi, Vietnam\",\n  \"industry\": \"Technology\",\n  \"experienceLevel\": \"SENIOR\",\n  \"type\": \"FULL_TIME\",\n  \"salary\": 3000,\n  \"remoteWork\": true,\n  \"urgent\": false,\n  \"featured\": false,\n  \"expiresAt\": \"2025-12-31T23:59:59.000Z\",\n  \"companyId\": \"{{companyId}}\",\n  \"requirements\": [\n    {\n      \"title\": \"Experience\",\n      \"description\": \"5+ years of experience in backend development\"\n    },\n    {\n      \"title\": \"Technical Skills\",\n      \"description\": \"Strong knowledge of Node.js, TypeScript, PostgreSQL\"\n    },\n    {\n      \"title\": \"Soft Skills\",\n      \"description\": \"Excellent communication and teamwork skills\"\n    }\n  ],\n  \"benefits\": [\n    {\n      \"title\": \"Health Insurance\",\n      \"description\": \"Full health insurance coverage for employees and family\"\n    },\n    {\n      \"title\": \"Remote Work\",\n      \"description\": \"Flexible remote work options\"\n    },\n    {\n      \"title\": \"Annual Bonus\",\n      \"description\": \"13th month salary and performance bonuses\"\n    }\n  ],\n  \"skills\": [\n    {\n      \"skillName\": \"Node.js\",\n      \"isRequired\": true\n    },\n    {\n      \"skillName\": \"TypeScript\",\n      \"isRequired\": true\n    },\n    {\n      \"skillName\": \"PostgreSQL\",\n      \"isRequired\": true\n    },\n    {\n      \"skillName\": \"Docker\",\n      \"isRequired\": false\n    },\n    {\n      \"skillName\": \"AWS\",\n      \"isRequired\": false\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs"
+							]
+						},
+						"description": "Create a new job posting with requirements, benefits, and skills. Requires authentication and company membership."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Job (with nested data)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Senior Backend Developer (Updated)\",\n  \"description\": \"Updated description\",\n  \"salary\": 3500,\n  \"requirements\": [\n    {\n      \"title\": \"Experience\",\n      \"description\": \"7+ years of experience in backend development\"\n    },\n    {\n      \"title\": \"Leadership\",\n      \"description\": \"Experience leading development teams\"\n    }\n  ],\n  \"benefits\": [\n    {\n      \"title\": \"Health Insurance\",\n      \"description\": \"Premium health insurance package\"\n    },\n    {\n      \"title\": \"Remote Work\",\n      \"description\": \"100% remote work available\"\n    },\n    {\n      \"title\": \"Learning Budget\",\n      \"description\": \"Annual budget for courses and conferences\"\n    }\n  ],\n  \"skills\": [\n    {\n      \"skillName\": \"Node.js\",\n      \"isRequired\": true\n    },\n    {\n      \"skillName\": \"TypeScript\",\n      \"isRequired\": true\n    },\n    {\n      \"skillName\": \"Microservices\",\n      \"isRequired\": true\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{createdJobId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{createdJobId}}"
+							]
+						},
+						"description": "Update job information including nested data. All nested arrays will replace existing data."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Job",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{createdJobId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{createdJobId}}"
+							]
+						},
+						"description": "Delete a job posting. Requires authentication and appropriate permissions."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company Jobs",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/company/{{companyId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"company",
+								"{{companyId}}"
+							]
+						},
+						"description": "Get all jobs posted by a specific company. Requires authentication and company membership."
+					},
+					"response": []
+				},
+				{
+					"name": "Repost Job",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jobId\": \"{{jobId}}\",\n  \"expiresAt\": \"2025-12-31T23:59:59.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs/company/{{companyId}}/repost",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"company",
+								"{{companyId}}",
+								"repost"
+							]
+						},
+						"description": "Repost an existing job with a new expiration date. Sets job to pending approval."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Jobs - Admin",
+			"item": [
+				{
+					"name": "Approve Job",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/approve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"approve"
+							]
+						},
+						"description": "Approve a pending job posting. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Job",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/reject",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"reject"
+							]
+						},
+						"description": "Reject a pending job posting. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Job",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/activate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"activate"
+							]
+						},
+						"description": "Activate a job posting. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Job",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/deactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"deactivate"
+							]
+						},
+						"description": "Deactivate a job posting. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Single Job Embedding",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/generate-embedding",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"generate-embedding"
+							]
+						},
+						"description": "Generate AI embedding for a single job. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate All Jobs Embeddings",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains results', function () {",
+									"    pm.expect(responseJson.data).to.have.property('total');",
+									"    pm.expect(responseJson.data).to.have.property('success');",
+									"    pm.expect(responseJson.data).to.have.property('failed');",
+									"});",
+									"",
+									"console.log('Total jobs:', responseJson.data.total);",
+									"console.log('Successful:', responseJson.data.success);",
+									"console.log('Failed:', responseJson.data.failed);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/generate-embeddings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"generate-embeddings"
+							]
+						},
+						"description": "Generate AI embeddings for all jobs that don't have embeddings. Admin only. Returns statistics about the operation."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Job Requirements",
+			"item": [
+				{
+					"name": "List Requirements",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"",
+									"if (responseJson.data && responseJson.data.length > 0) {",
+									"    pm.environment.set('requirementId', responseJson.data[0].id);",
+									"    console.log('Requirement ID saved:', responseJson.data[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/requirements",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"requirements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Requirement",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Problem Solving\",\n  \"description\": \"Strong analytical and problem-solving skills\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/requirements",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"requirements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Requirement",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/requirements/{{requirementId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"requirements",
+								"{{requirementId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Requirement",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Advanced Problem Solving\",\n  \"description\": \"Exceptional analytical and problem-solving abilities\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/requirements/{{requirementId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"requirements",
+								"{{requirementId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Requirement",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/requirements/{{requirementId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"requirements",
+								"{{requirementId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Job Benefits",
+			"item": [
+				{
+					"name": "List Benefits",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"",
+									"if (responseJson.data && responseJson.data.length > 0) {",
+									"    pm.environment.set('benefitId', responseJson.data[0].id);",
+									"    console.log('Benefit ID saved:', responseJson.data[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/benefits",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"benefits"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Benefit",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Gym Membership\",\n  \"description\": \"Free gym membership at premium fitness centers\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/benefits",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"benefits"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Benefit",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/benefits/{{benefitId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"benefits",
+								"{{benefitId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Benefit",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Premium Gym Membership\",\n  \"description\": \"Free membership at top-tier fitness centers with personal training\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/benefits/{{benefitId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"benefits",
+								"{{benefitId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Benefit",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/benefits/{{benefitId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"benefits",
+								"{{benefitId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Job Skills",
+			"item": [
+				{
+					"name": "List Skills",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"",
+									"if (responseJson.data && responseJson.data.length > 0) {",
+									"    pm.environment.set('skillId', responseJson.data[0].id);",
+									"    console.log('Skill ID saved:', responseJson.data[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/skills",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"skills"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Skill",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"skillName\": \"GraphQL\",\n  \"isRequired\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/skills",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"skills"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Skill",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/skills/{{skillId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"skills",
+								"{{skillId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Skill",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"skillName\": \"GraphQL\",\n  \"isRequired\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/skills/{{skillId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"skills",
+								"{{skillId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Skill",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{jobId}}/skills/{{skillId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{jobId}}",
+								"skills",
+								"{{skillId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// This runs before every request",
+					"console.log('Request to:', pm.request.url.toString());",
+					"",
+					"// Check if token exists for protected routes",
+					"const url = pm.request.url.toString();",
+					"if (!url.includes('/auth/login') && !url.includes('/auth/register')) {",
+					"    const token = pm.environment.get('accessToken');",
+					"    if (!token) {",
+					"        console.warn('Warning: No access token found. Please login first.');",
+					"    }",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// This runs after every request",
+					"",
+					"// Log response time",
+					"console.log('Response time:', pm.response.responseTime, 'ms');",
+					"",
+					"// Check for common errors",
+					"if (pm.response.code === 401) {",
+					"    console.error('Unauthorized! Token may be expired. Please login again.');",
+					"}",
+					"",
+					"if (pm.response.code === 403) {",
+					"    console.error('Forbidden! You do not have permission for this action.');",
+					"}",
+					"",
+					"if (pm.response.code === 500) {",
+					"    console.error('Server error! Check server logs.');",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:4000/api",
+			"type": "string"
+		}
+	]
+}
