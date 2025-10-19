@@ -84,10 +84,10 @@ export class JobBenefitService {
       where: {
         id: jobId,
         company: {
-          members: {
+          users: {
             some: {
-              userId,
-              role: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
+              id: userId,
+              companyRole: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
             }
           }
         }

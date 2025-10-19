@@ -7,12 +7,9 @@ export class ApplicationsService {
       select: { 
         id: true, 
         status: true, 
-        userId: true, 
         jobId: true, 
         cvId: true,
         coverLetter: true,
-        appliedAt: true,
-        availableFrom: true,
         notes: true,
         createdAt: true,
         updatedAt: true,
@@ -21,6 +18,7 @@ export class ApplicationsService {
             id: true,
             title: true,
             fullName: true,
+            userId: true,
           }
         },
         job: {
@@ -35,7 +33,7 @@ export class ApplicationsService {
           }
         }
       },
-      orderBy: { appliedAt: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
   }
 
@@ -44,8 +42,7 @@ export class ApplicationsService {
     const job = await prisma.job.findFirst({
       where: {
         id: input.jobId,
-        isActive: true,
-        isApproved: true
+        isActive: true
       }
     });
 
@@ -53,19 +50,7 @@ export class ApplicationsService {
       throw new Error('Công việc không tồn tại hoặc không còn tuyển dụng');
     }
 
-    // Kiểm tra user đã apply job này chưa
-    const existingApplication = await prisma.application.findFirst({
-      where: {
-        userId,
-        jobId: input.jobId
-      }
-    });
-
-    if (existingApplication) {
-      throw new Error('Bạn đã ứng tuyển công việc này rồi');
-    }
-
-    // Nếu có cvId, kiểm tra CV thuộc về user
+    // Kiểm tra CV thuộc về user và chưa apply job này
     if (input.cvId) {
       const cv = await prisma.cV.findFirst({
         where: {
@@ -77,15 +62,25 @@ export class ApplicationsService {
       if (!cv) {
         throw new Error('CV không tồn tại hoặc không thuộc về bạn');
       }
+
+      // Kiểm tra CV đã apply job này chưa
+      const existingApplication = await prisma.application.findFirst({
+        where: {
+          cvId: input.cvId,
+          jobId: input.jobId
+        }
+      });
+
+      if (existingApplication) {
+        throw new Error('CV này đã ứng tuyển công việc này rồi');
+      }
     }
 
     const application = await prisma.application.create({ 
       data: { 
-        userId, 
         jobId: input.jobId, 
-        cvId: input.cvId ?? null,
+        cvId: input.cvId,
         coverLetter: input.coverLetter ?? null,
-        availableFrom: input.availableFrom ? new Date(input.availableFrom) : null,
         notes: input.notes ?? null
       } 
     });
@@ -112,6 +107,7 @@ export class ApplicationsService {
             id: true,
             title: true,
             fullName: true,
+            userId: true,
           }
         },
         job: {
@@ -124,24 +120,19 @@ export class ApplicationsService {
               }
             }
           }
-        },
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          }
         }
       }
     });
   }
 
   async update(id: string, userId: string, input: UpdateApplicationDto) {
-    // Kiểm tra application thuộc về user
+    // Kiểm tra application và CV thuộc về user
     const application = await prisma.application.findFirst({
       where: {
         id,
-        userId
+        cv: {
+          userId
+        }
       }
     });
 
@@ -166,7 +157,6 @@ export class ApplicationsService {
     const updateData: any = {};
     if (input.cvId !== undefined) updateData.cvId = input.cvId;
     if (input.coverLetter !== undefined) updateData.coverLetter = input.coverLetter;
-    if (input.availableFrom !== undefined) updateData.availableFrom = input.availableFrom ? new Date(input.availableFrom) : null;
     if (input.notes !== undefined) updateData.notes = input.notes;
     if (input.status !== undefined) updateData.status = input.status;
 
@@ -185,7 +175,7 @@ export class ApplicationsService {
           include: {
             company: {
               include: {
-                members: true
+                users: true
               }
             }
           }
@@ -198,8 +188,8 @@ export class ApplicationsService {
     }
 
     // Kiểm tra user có quyền update status không
-    const hasPermission = application.job.company.members.some(
-      member => member.userId === userId && ['OWNER', 'MANAGER', 'RECRUITER'].includes(member.role)
+    const hasPermission = application.job.company.users.some(
+      user => user.id === userId && ['OWNER', 'MANAGER', 'RECRUITER'].includes(user.companyRole || '')
     );
 
     if (!hasPermission) {
@@ -219,7 +209,11 @@ export class ApplicationsService {
 
   async getUserApplications(userId: string) {
     return prisma.application.findMany({
-      where: { userId },
+      where: { 
+        cv: {
+          userId
+        }
+      },
       include: {
         job: {
           select: {
@@ -237,7 +231,7 @@ export class ApplicationsService {
           }
         }
       },
-      orderBy: { appliedAt: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
   }
 
@@ -247,10 +241,10 @@ export class ApplicationsService {
       where: {
         id: jobId,
         company: {
-          members: {
+          users: {
             some: {
-              userId,
-              role: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
+              id: userId,
+              companyRole: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
             }
           }
         }
@@ -264,23 +258,16 @@ export class ApplicationsService {
     return prisma.application.findMany({
       where: { jobId },
       include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            avatarUrl: true,
-          }
-        },
         cv: {
           select: {
             id: true,
             title: true,
             fullName: true,
+            userId: true,
           }
         }
       },
-      orderBy: { appliedAt: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
   }
 
@@ -289,7 +276,9 @@ export class ApplicationsService {
     const application = await prisma.application.findFirst({
       where: {
         id,
-        userId
+        cv: {
+          userId
+        }
       }
     });
 
