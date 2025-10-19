@@ -10,15 +10,12 @@ import { jobsRouter } from '../modules/jobs/routes.js';
 import { applicationsRouter } from '../modules/applications/routes.js';
 import { authRouter } from '../modules/auth/routes.js';
 import { savedJobsRouter } from '../modules/saved-jobs/routes.js';
-import { jobAlertsRouter } from '../modules/job-alerts/routes.js';
-import { searchRouter } from '../modules/search/routes.js';
 import { uploadsRouter } from '../modules/uploads/routes.js';
 // New modules
 import cvsRouter from '../modules/cvs/routes.js';
 import adminRouter from '../modules/admin/routes.js';
 // Additional modules
 import { notificationsRouter } from '../modules/notifications/routes.js';
-import { reviewsRouter } from '../modules/reviews/routes.js';
 import aiRouter from '../modules/ai/routes.js';
 
 // Job nested routes are handled in jobs/routes.ts
@@ -41,8 +38,6 @@ export function createExpressApp() {
   app.use('/api/jobs', jobsRouter);
   app.use('/api/applications', applicationsRouter);
   app.use('/api/saved-jobs', savedJobsRouter);
-  app.use('/api/job-alerts', jobAlertsRouter);
-  app.use('/api/search', searchRouter);
   app.use('/api/uploads', uploadsRouter);
   
   // New modules
@@ -51,7 +46,6 @@ export function createExpressApp() {
   
   // Additional modules
   app.use('/api/notifications', notificationsRouter);
-  app.use('/api/reviews', reviewsRouter);
   app.use('/api/ai', aiRouter);
   
   // serve static uploads
