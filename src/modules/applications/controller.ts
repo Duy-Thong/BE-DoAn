@@ -1,19 +1,29 @@
 import type { Request, Response } from 'express';
 import { ApplicationsService } from './service.js';
+import { ApplicationRepository } from './repository.js';
 import { CreateApplicationDto, UpdateApplicationDto, UpdateApplicationStatusDto } from './dto.js';
 import { ResponseUtils } from '../../utils/response.js';
 import { AppError, NotFoundError, ValidationError } from '../../utils/error.js';
 
-const service = new ApplicationsService();
+const repository = new ApplicationRepository();
+const service = new ApplicationsService(repository);
 
 /**
- * List all applications (Admin only)
+ * List all applications (Admin and Recruiter)
  */
-export const listApplications = async (_req: Request, res: Response) => {
+export const listApplications = async (req: Request, res: Response) => {
   try {
-    const applications = await service.list();
+    const userId = req.user?.id;
+    if (!userId) {
+      return ResponseUtils.unauthorized(res, 'Vui lòng đăng nhập');
+    }
+
+    const applications = await service.list(userId);
     ResponseUtils.success(res, applications);
   } catch (error) {
+    if (error instanceof AppError) {
+      return ResponseUtils.error(res, error.message, error.statusCode);
+    }
     ResponseUtils.internalError(res, 'Lỗi khi lấy danh sách đơn ứng tuyển');
   }
 };

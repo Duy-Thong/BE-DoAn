@@ -24,7 +24,7 @@ export const applicationsRouter = Router();
 // Get my applications (Candidate)
 applicationsRouter.get('/mine', AuthMiddleware.authenticate, getUserApplications);
 
-// Get all applications (Admin only - should add admin middleware)
+// Get all applications (Admin: all, Recruiter: company's jobs only)
 applicationsRouter.get('/', AuthMiddleware.authenticate, listApplications);
 
 // Get application by ID

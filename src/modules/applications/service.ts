@@ -1,80 +1,51 @@
-import { prisma } from '../../loaders/prisma.js';
 import type { CreateApplicationDto, UpdateApplicationDto, UpdateApplicationStatusDto } from './dto.js';
 import { NotFoundError, ValidationError, AuthorizationError } from '../../utils/error.js';
+import { ApplicationRepository } from './repository.js';
 
 export class ApplicationsService {
+  private repository: ApplicationRepository;
+
+  constructor(repository: ApplicationRepository) {
+    this.repository = repository;
+  }
+
   /**
-   * List all applications (Admin only)
+   * List all applications (Admin and Recruiter)
    */
-  async list() {
-    return prisma.application.findMany({
-      select: {
-        id: true,
-        status: true,
-        jobId: true,
-        cvId: true,
-        coverLetter: true,
-        notes: true,
-        createdAt: true,
-        updatedAt: true,
-        cv: {
-          select: {
-            id: true,
-            title: true,
-            fullName: true,
-            userId: true,
-          }
-        },
+  async list(userId: string) {
+    // Kiểm tra user có quyền xem tất cả applications không
+    const user = await this.repository.findUserWithRole(userId);
+
+    if (!user) {
+      throw new AuthorizationError('User không tồn tại');
+    }
+
+    // Admin có thể xem tất cả, Recruiter chỉ xem của company mình
+    let whereCondition: any = {};
+    
+    if (user.role !== 'ADMIN') {
+      whereCondition = {
         job: {
-          select: {
-            id: true,
-            title: true,
-            company: {
-              select: {
-                name: true,
+          company: {
+            users: {
+              some: {
+                id: userId,
+                companyRole: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
               }
             }
           }
         }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+      };
+    }
+
+    return this.repository.findMany(whereCondition);
   }
 
   /**
    * Get application by ID
    */
   async getById(id: string) {
-    return prisma.application.findUnique({
-      where: { id },
-      include: {
-        cv: {
-          select: {
-            id: true,
-            title: true,
-            fullName: true,
-            email: true,
-            phoneNumber: true,
-            userId: true,
-          }
-        },
-        job: {
-          select: {
-            id: true,
-            title: true,
-            location: true,
-            type: true,
-            salary: true,
-            company: {
-              select: {
-                name: true,
-                logoUrl: true,
-              }
-            }
-          }
-        }
-      }
-    });
+    return this.repository.findById(id);
   }
 
   /**
@@ -82,12 +53,7 @@ export class ApplicationsService {
    */
   async create(userId: string, input: CreateApplicationDto) {
     // Kiểm tra job tồn tại và đang active
-    const job = await prisma.job.findFirst({
-      where: {
-        id: input.jobId,
-        isActive: true
-      }
-    });
+    const job = await this.repository.findJobById(input.jobId);
 
     if (!job) {
       throw new ValidationError('Công việc không tồn tại hoặc không còn tuyển dụng');
@@ -99,31 +65,21 @@ export class ApplicationsService {
     }
 
     // Kiểm tra CV thuộc về user
-    const cv = await prisma.cV.findFirst({
-      where: {
-        id: input.cvId,
-        userId
-      }
-    });
+    const cv = await this.repository.findCvByIdAndUserId(input.cvId, userId);
 
     if (!cv) {
       throw new ValidationError('CV không tồn tại hoặc không thuộc về bạn');
     }
 
     // Kiểm tra đã apply job này chưa
-    const existingApplication = await prisma.application.findFirst({
-      where: {
-        cvId: input.cvId,
-        jobId: input.jobId
-      }
-    });
+    const existingApplication = await this.repository.findByCvAndJob(input.cvId, input.jobId);
 
     if (existingApplication) {
       throw new ValidationError('Bạn đã ứng tuyển công việc này rồi');
     }
 
     // Transaction: Tạo application và tăng applicationCount
-    const application = await prisma.$transaction(async (tx) => {
+    const application = await this.repository.executeTransaction(async (tx) => {
       // Tạo application
       const app = await tx.application.create({
         data: {
@@ -177,14 +133,7 @@ export class ApplicationsService {
    */
   async update(id: string, userId: string, input: UpdateApplicationDto) {
     // Kiểm tra application thuộc về user
-    const application = await prisma.application.findFirst({
-      where: {
-        id,
-        cv: {
-          userId
-        }
-      }
-    });
+    const application = await this.repository.findByIdAndUserId(id, userId);
 
     if (!application) {
       throw new NotFoundError('Đơn ứng tuyển không tìm thấy hoặc không có quyền truy cập');
@@ -197,25 +146,14 @@ export class ApplicationsService {
 
     // Nếu có cvId mới, kiểm tra CV thuộc về user
     if (input.cvId && input.cvId !== application.cvId) {
-      const cv = await prisma.cV.findFirst({
-        where: {
-          id: input.cvId,
-          userId
-        }
-      });
+      const cv = await this.repository.findCvByIdAndUserId(input.cvId, userId);
 
       if (!cv) {
         throw new ValidationError('CV không tồn tại hoặc không thuộc về bạn');
       }
 
       // Kiểm tra CV mới đã apply job này chưa
-      const existingApplication = await prisma.application.findFirst({
-        where: {
-          cvId: input.cvId,
-          jobId: application.jobId,
-          id: { not: id }
-        }
-      });
+      const existingApplication = await this.repository.findByCvAndJob(input.cvId, application.jobId, id);
 
       if (existingApplication) {
         throw new ValidationError('CV này đã được dùng để ứng tuyển công việc này rồi');
@@ -227,31 +165,7 @@ export class ApplicationsService {
     if (input.coverLetter !== undefined) updateData.coverLetter = input.coverLetter ?? null;
     if (input.notes !== undefined) updateData.notes = input.notes ?? null;
 
-    return prisma.application.update({
-      where: { id },
-      data: updateData,
-      include: {
-        cv: {
-          select: {
-            id: true,
-            title: true,
-            fullName: true,
-            userId: true,
-          }
-        },
-        job: {
-          select: {
-            id: true,
-            title: true,
-            company: {
-              select: {
-                name: true,
-              }
-            }
-          }
-        }
-      }
-    });
+    return this.repository.update(id, updateData);
   }
 
   /**
@@ -259,22 +173,7 @@ export class ApplicationsService {
    */
   async updateStatus(id: string, userId: string, input: UpdateApplicationStatusDto) {
     // Lấy application với thông tin job và company
-    const application = await prisma.application.findUnique({
-      where: { id },
-      include: {
-        job: {
-          include: {
-            company: {
-              include: {
-                users: {
-                  where: { id: userId }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
+    const application = await this.repository.findByIdWithJobAndCompany(id, userId);
 
     if (!application) {
       throw new NotFoundError('Đơn ứng tuyển không tìm thấy');
@@ -293,73 +192,14 @@ export class ApplicationsService {
       updateData.notes = input.notes ?? null;
     }
 
-    return prisma.application.update({
-      where: { id },
-      data: updateData,
-      include: {
-        cv: {
-          select: {
-            id: true,
-            title: true,
-            fullName: true,
-            email: true,
-            phoneNumber: true,
-            userId: true,
-          }
-        },
-        job: {
-          select: {
-            id: true,
-            title: true,
-            company: {
-              select: {
-                name: true,
-              }
-            }
-          }
-        }
-      }
-    });
+    return this.repository.updateStatus(id, updateData);
   }
 
   /**
    * Get user's applications (Candidate)
    */
   async getUserApplications(userId: string) {
-    return prisma.application.findMany({
-      where: {
-        cv: {
-          userId
-        }
-      },
-      include: {
-        cv: {
-          select: {
-            id: true,
-            title: true,
-            fullName: true,
-          }
-        },
-        job: {
-          select: {
-            id: true,
-            title: true,
-            location: true,
-            type: true,
-            salary: true,
-            urgent: true,
-            expiresAt: true,
-            company: {
-              select: {
-                name: true,
-                logoUrl: true,
-              }
-            }
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    return this.repository.findByUserId(userId);
   }
 
   /**
@@ -367,42 +207,13 @@ export class ApplicationsService {
    */
   async getJobApplications(jobId: string, userId: string) {
     // Kiểm tra quyền truy cập job
-    const job = await prisma.job.findFirst({
-      where: {
-        id: jobId,
-        company: {
-          users: {
-            some: {
-              id: userId,
-              companyRole: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
-            }
-          }
-        }
-      }
-    });
+    const job = await this.repository.findJobWithCompanyUsers(jobId, userId);
 
     if (!job) {
       throw new AuthorizationError('Không có quyền xem danh sách ứng tuyển của công việc này');
     }
 
-    return prisma.application.findMany({
-      where: { jobId },
-      include: {
-        cv: {
-          select: {
-            id: true,
-            title: true,
-            fullName: true,
-            email: true,
-            phoneNumber: true,
-            currentPosition: true,
-            summary: true,
-            userId: true,
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    return this.repository.findByJobId(jobId);
   }
 
   /**
@@ -410,14 +221,7 @@ export class ApplicationsService {
    */
   async delete(id: string, userId: string) {
     // Kiểm tra application thuộc về user
-    const application = await prisma.application.findFirst({
-      where: {
-        id,
-        cv: {
-          userId
-        }
-      }
-    });
+    const application = await this.repository.findByIdAndUserId(id, userId);
 
     if (!application) {
       throw new NotFoundError('Đơn ứng tuyển không tìm thấy hoặc không có quyền truy cập');
@@ -429,7 +233,7 @@ export class ApplicationsService {
     }
 
     // Transaction: Xóa application và giảm applicationCount
-    await prisma.$transaction(async (tx) => {
+    await this.repository.executeTransaction(async (tx) => {
       // Xóa application
       await tx.application.delete({ where: { id } });
 
@@ -445,51 +249,4 @@ export class ApplicationsService {
     });
   }
 
-  /**
-   * Get company's all applications (Company owner/manager/recruiter)
-   */
-  async getCompanyApplications(companyId: string, userId: string) {
-    // Kiểm tra user thuộc company và có quyền
-    const user = await prisma.user.findFirst({
-      where: {
-        id: userId,
-        companyId,
-        companyRole: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
-      }
-    });
-
-    if (!user) {
-      throw new AuthorizationError('Không có quyền xem danh sách ứng tuyển của công ty');
-    }
-
-    return prisma.application.findMany({
-      where: {
-        job: {
-          companyId
-        }
-      },
-      include: {
-        cv: {
-          select: {
-            id: true,
-            title: true,
-            fullName: true,
-            email: true,
-            phoneNumber: true,
-            currentPosition: true,
-            userId: true,
-          }
-        },
-        job: {
-          select: {
-            id: true,
-            title: true,
-            location: true,
-            type: true,
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-  }
 }
