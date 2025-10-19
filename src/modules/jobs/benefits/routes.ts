@@ -9,10 +9,10 @@ const jobBenefitController = new JobBenefitController();
 router.use(AuthMiddleware.authenticate);
 
 // Job Benefits routes
-router.post('/:jobId/benefits', jobBenefitController.createJobBenefit.bind(jobBenefitController));
-router.get('/:jobId/benefits', jobBenefitController.getJobBenefits.bind(jobBenefitController));
-router.get('/:jobId/benefits/:benefitId', jobBenefitController.getJobBenefitById.bind(jobBenefitController));
-router.put('/:jobId/benefits/:benefitId', jobBenefitController.updateJobBenefit.bind(jobBenefitController));
-router.delete('/:jobId/benefits/:benefitId', jobBenefitController.deleteJobBenefit.bind(jobBenefitController));
+router.post('/', jobBenefitController.createJobBenefit.bind(jobBenefitController));
+router.get('/', jobBenefitController.getJobBenefits.bind(jobBenefitController));
+router.get('/:benefitId', jobBenefitController.getJobBenefitById.bind(jobBenefitController));
+router.put('/:benefitId', jobBenefitController.updateJobBenefit.bind(jobBenefitController));
+router.delete('/:benefitId', jobBenefitController.deleteJobBenefit.bind(jobBenefitController));
 
 export default router;

@@ -9,10 +9,10 @@ const jobSkillController = new JobSkillController();
 router.use(AuthMiddleware.authenticate);
 
 // Job Skills routes
-router.post('/:jobId/skills', jobSkillController.createJobSkill.bind(jobSkillController));
-router.get('/:jobId/skills', jobSkillController.getJobSkills.bind(jobSkillController));
-router.get('/:jobId/skills/:skillId', jobSkillController.getJobSkillById.bind(jobSkillController));
-router.put('/:jobId/skills/:skillId', jobSkillController.updateJobSkill.bind(jobSkillController));
-router.delete('/:jobId/skills/:skillId', jobSkillController.deleteJobSkill.bind(jobSkillController));
+router.post('/', jobSkillController.createJobSkill.bind(jobSkillController));
+router.get('/', jobSkillController.getJobSkills.bind(jobSkillController));
+router.get('/:skillId', jobSkillController.getJobSkillById.bind(jobSkillController));
+router.put('/:skillId', jobSkillController.updateJobSkill.bind(jobSkillController));
+router.delete('/:skillId', jobSkillController.deleteJobSkill.bind(jobSkillController));
 
 export default router;

@@ -9,10 +9,10 @@ const jobRequirementController = new JobRequirementController();
 router.use(AuthMiddleware.authenticate);
 
 // Job Requirements routes
-router.post('/:jobId/requirements', jobRequirementController.createJobRequirement.bind(jobRequirementController));
-router.get('/:jobId/requirements', jobRequirementController.getJobRequirements.bind(jobRequirementController));
-router.get('/:jobId/requirements/:requirementId', jobRequirementController.getJobRequirementById.bind(jobRequirementController));
-router.put('/:jobId/requirements/:requirementId', jobRequirementController.updateJobRequirement.bind(jobRequirementController));
-router.delete('/:jobId/requirements/:requirementId', jobRequirementController.deleteJobRequirement.bind(jobRequirementController));
+router.post('/', jobRequirementController.createJobRequirement.bind(jobRequirementController));
+router.get('/', jobRequirementController.getJobRequirements.bind(jobRequirementController));
+router.get('/:requirementId', jobRequirementController.getJobRequirementById.bind(jobRequirementController));
+router.put('/:requirementId', jobRequirementController.updateJobRequirement.bind(jobRequirementController));
+router.delete('/:requirementId', jobRequirementController.deleteJobRequirement.bind(jobRequirementController));
 
 export default router;

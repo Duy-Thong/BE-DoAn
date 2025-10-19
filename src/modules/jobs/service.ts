@@ -5,8 +5,7 @@ export class JobsService {
   async list() {
     return prisma.job.findMany({ 
       where: { 
-        isActive: true, 
-        isApproved: true 
+        isActive: true
       }, 
       include: {
         company: {
@@ -16,15 +15,16 @@ export class JobsService {
             isVerified: true
           }
         },
+        requirements: true,
+        benefits: true,
+        jobSkills: true,
         _count: {
           select: {
-            applications: true,
-            views: true
+            applications: true
           }
         }
       },
       orderBy: [
-        { featured: 'desc' },
         { urgent: 'desc' },
         { createdAt: 'desc' }
       ]
@@ -36,19 +36,46 @@ export class JobsService {
       title: input.title,
       description: input.description,
       location: input.location ?? null,
+      industry: input.industry ?? null,
+      experienceLevel: input.experienceLevel ?? null,
       type: (input.type as any) || 'FULL_TIME',
       salary: input.salary ?? null,
-      remoteWork: input.remoteWork,
-      urgent: input.urgent,
-      featured: input.featured,
+      urgent: input.urgent ?? false,
       companyId: input.companyId,
-      isActive: false, // Cần được duyệt trước khi active
-      isApproved: false,
+      isActive: true, // Theo schema hiện tại, job active ngay
       embedding: [], // TODO: Generate embedding using AI service
     };
 
     if (input.expiresAt) {
       data.expiresAt = new Date(input.expiresAt);
+    }
+
+    // Add nested data creation
+    if (input.requirements && input.requirements.length > 0) {
+      data.requirements = {
+        create: input.requirements.map(req => ({
+          title: req.title,
+          description: req.description
+        }))
+      };
+    }
+
+    if (input.benefits && input.benefits.length > 0) {
+      data.benefits = {
+        create: input.benefits.map(benefit => ({
+          title: benefit.title,
+          description: benefit.description
+        }))
+      };
+    }
+
+    if (input.skills && input.skills.length > 0) {
+      data.jobSkills = {
+        create: input.skills.map(skill => ({
+          skillName: skill.skillName,
+          isRequired: skill.isRequired
+        }))
+      };
     }
 
     return prisma.job.create({ 
@@ -60,7 +87,10 @@ export class JobsService {
             logoUrl: true,
             isVerified: true
           }
-        }
+        },
+        requirements: true,
+        benefits: true,
+        jobSkills: true
       }
     });
   }
@@ -79,10 +109,12 @@ export class JobsService {
             address: true
           }
         },
+        requirements: true,
+        benefits: true,
+        jobSkills: true,
         _count: {
           select: {
-            applications: true,
-            views: true
+            applications: true
           }
         }
       }
@@ -94,20 +126,13 @@ export class JobsService {
     if (input.title !== undefined) data.title = input.title;
     if (input.description !== undefined) data.description = input.description;
     if (input.location !== undefined) data.location = input.location ?? null;
+    if (input.industry !== undefined) data.industry = input.industry ?? null;
+    if (input.experienceLevel !== undefined) data.experienceLevel = input.experienceLevel;
     if (input.type !== undefined) data.type = input.type as any;
     if (input.salary !== undefined) data.salary = input.salary ?? null;
-    if (input.remoteWork !== undefined) data.remoteWork = input.remoteWork;
     if (input.urgent !== undefined) data.urgent = input.urgent;
-    if (input.featured !== undefined) data.featured = input.featured;
     if (input.expiresAt !== undefined) data.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
     if (input.isActive !== undefined) data.isActive = input.isActive;
-    if (input.isApproved !== undefined) data.isApproved = input.isApproved;
-    
-    // Khi update, cần duyệt lại (trừ khi admin cập nhật)
-    if (input.isApproved === undefined) {
-      data.isApproved = false;
-      data.isActive = false;
-    }
 
     return prisma.job.update({ 
       where: { id }, 
@@ -125,7 +150,38 @@ export class JobsService {
   }
 
   async remove(id: string) {
-    await prisma.job.delete({ where: { id } });
+    // Xóa các nested relationships trước
+    await prisma.$transaction(async (tx) => {
+      // Xóa applications
+      await tx.application.deleteMany({
+        where: { jobId: id }
+      });
+
+      // Xóa saved jobs
+      await tx.savedJob.deleteMany({
+        where: { jobId: id }
+      });
+
+      // Xóa job requirements
+      await tx.jobRequirement.deleteMany({
+        where: { jobId: id }
+      });
+
+      // Xóa job benefits
+      await tx.jobBenefit.deleteMany({
+        where: { jobId: id }
+      });
+
+      // Xóa job skills
+      await tx.jobSkill.deleteMany({
+        where: { jobId: id }
+      });
+
+      // Cuối cùng xóa job
+      await tx.job.delete({
+        where: { id }
+      });
+    });
   }
 
   // Tái đăng tin tuyển dụng
@@ -149,8 +205,7 @@ export class JobsService {
     }
 
     const data: any = {
-      isApproved: false, // Cần duyệt lại khi tái đăng
-      isActive: false
+      isActive: true // Tái đăng job
     };
 
     if (input.expiresAt) {
@@ -185,8 +240,7 @@ export class JobsService {
       include: {
         _count: {
           select: {
-            applications: true,
-            views: true
+            applications: true
           }
         }
       },
@@ -198,33 +252,26 @@ export class JobsService {
 
   // Kiểm tra quyền truy cập job
   private async checkJobPermission(companyId: string, userId: string) {
-    const member = await prisma.companyMember.findFirst({
+    const user = await prisma.user.findFirst({
       where: {
-        userId,
+        id: userId,
         companyId,
-        role: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
+        companyRole: { in: ['OWNER', 'MANAGER', 'RECRUITER'] }
       }
     });
 
-    return !!member;
+    return !!user;
   }
 
-  // Track job view
+  // Track job view - simplified version
   async trackJobView(jobId: string) {
-    // Increment view count
-    await prisma.job.update({
+    // Increment application count as view tracking
+    return await prisma.job.update({
       where: { id: jobId },
       data: {
-        viewCount: {
+        applicationCount: {
           increment: 1
         }
-      }
-    });
-
-    // Create view record
-    return await prisma.jobView.create({
-      data: {
-        jobId
       }
     });
   }
@@ -269,8 +316,7 @@ export class JobsService {
         jobSkills: true,
         _count: {
           select: {
-            applications: true,
-            views: true
+            applications: true
           }
         }
       }

@@ -10,7 +10,15 @@ jobsRouter.get('/', listJobs);
 jobsRouter.get('/:id', getJob);
 jobsRouter.post('/:id/view', async (req, res) => {
   try {
-    await prisma.jobView.create({ data: { jobId: req.params.id! } });
+    // Simple view tracking by incrementing application count
+    await prisma.job.update({
+      where: { id: req.params.id! },
+      data: {
+        applicationCount: {
+          increment: 1
+        }
+      }
+    });
     res.status(201).json({ 
       success: true,
       message: 'View recorded' 
