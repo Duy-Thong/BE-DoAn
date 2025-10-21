@@ -120,6 +120,7 @@ export class CVService {
           data: data.languages.map(lang => ({
             name: lang.name,
             level: lang.proficiency as any,
+            description: lang.description,
             cvId: cv.id,
           }))
         });
@@ -130,7 +131,7 @@ export class CVService {
         await tx.achievement.createMany({
           data: data.achievements.map(achievement => ({
             title: achievement.title,
-            acquiredAt: new Date(achievement.date),
+            acquiredAt: new Date(achievement.acquiredAt),
             description: achievement.description,
             cvId: cv.id,
           }))
@@ -373,6 +374,7 @@ export class CVService {
             data: data.languages.map(lang => ({
               name: lang.name,
               level: lang.proficiency as any,
+              description: lang.description,
               cvId: cvId,
             }))
           });
@@ -388,7 +390,7 @@ export class CVService {
           await tx.achievement.createMany({
             data: data.achievements.map(achievement => ({
               title: achievement.title,
-              acquiredAt: new Date(achievement.date),
+              acquiredAt: new Date(achievement.acquiredAt),
               description: achievement.description,
               cvId: cvId,
             }))

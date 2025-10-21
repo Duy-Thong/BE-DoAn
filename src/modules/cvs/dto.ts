@@ -73,11 +73,12 @@ export const languageItemDto = z.object({
   proficiency: z.enum(['BASIC', 'CONVERSATIONAL', 'PROFESSIONAL', 'NATIVE'], {
     message: 'Trình độ ngôn ngữ không hợp lệ'
   }),
+  description: z.string().optional(),
 });
 
 export const achievementItemDto = z.object({
   title: z.string().min(1, 'Tên thành tích không được để trống'),
-  date: z.string().datetime('Ngày cấp không hợp lệ'),
+  acquiredAt: z.string().datetime('Ngày cấp không hợp lệ'),
   description: z.string().optional(),
 });
 
