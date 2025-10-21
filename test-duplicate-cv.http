@@ -1,0 +1,8 @@
+### Test Duplicate CV Endpoint
+POST http://localhost:4000/api/cvs/cmh0vo1r9000wnygw1a16hnim/duplicate
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "title": "test (Copy)"
+}

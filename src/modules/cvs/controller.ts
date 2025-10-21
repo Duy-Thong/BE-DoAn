@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { CVService } from './service.js';
-import { updateCompleteCVDto, setMainCVDto, createCompleteCVDto } from './dto.js';
+import { updateCompleteCVDto, setMainCVDto, createCompleteCVDto, duplicateCVDto } from './dto.js';
 import { ResponseUtils } from '../../utils/response.js';
 import { AppError } from '../../utils/error.js';
 import { ErrorCode } from '../../utils/error-codes.js';
@@ -276,6 +276,33 @@ export class CVController {
       return ResponseUtils.success(res, { templates }, 'Lấy danh sách templates thành công');
     } catch (error) {
       return ResponseUtils.internalError(res, 'Lỗi khi lấy danh sách templates');
+    }
+  }
+
+  // Duplicate CV
+  async duplicateCV(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { cvId } = req.params;
+
+      if (!userId) {
+        return ResponseUtils.unauthorized(res);
+      }
+
+      const data = duplicateCVDto.parse(req.body);
+      const duplicatedCV = await cvService.duplicateCV(cvId, userId, data.title);
+
+      return ResponseUtils.created(res, duplicatedCV, 'Sao chép CV thành công');
+    } catch (error) {
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+
+      if (error instanceof Error && error.name === 'ZodError') {
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+      }
+
+      return ResponseUtils.internalError(res, 'Lỗi khi sao chép CV');
     }
   }
 }

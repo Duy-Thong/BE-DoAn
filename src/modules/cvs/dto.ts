@@ -154,7 +154,13 @@ export const updateCompleteCVDto = z.object({
   activities: z.array(activityItemDto).optional(),
 });
 
+// DTO for duplicate CV
+export const duplicateCVDto = z.object({
+  title: z.string().min(1, 'Tiêu đề CV không được để trống'),
+});
+
 export type UpdateCompleteCVDto = z.infer<typeof updateCompleteCVDto>;
 export type SetMainCVDto = z.infer<typeof setMainCVDto>;
 export type CVResponse = z.infer<typeof CVResponse>;
 export type CreateCompleteCVDto = z.infer<typeof createCompleteCVDto>;
+export type DuplicateCVDto = z.infer<typeof duplicateCVDto>;

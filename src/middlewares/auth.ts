@@ -473,6 +473,12 @@ export class AuthMiddleware {
         return next();
       }
 
+      // Skip validation for requests without body or with empty body
+      const contentLength = parseInt(req.get('Content-Length') || '0');
+      if (contentLength === 0) {
+        return next();
+      }
+
       const contentType = req.get('Content-Type');
       if (!contentType || !allowedTypes.some(type => contentType.includes(type))) {
         const errorResponse = ErrorCodeUtils.createErrorResponse(ErrorCode.VAL_INVALID_FORMAT);

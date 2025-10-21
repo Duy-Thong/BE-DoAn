@@ -8,5 +8,5 @@ const config = {
     },
     extensionsToTreatAsEsm: ['.ts'],
 };
+
 export default config;
-//# sourceMappingURL=jest.config.js.map

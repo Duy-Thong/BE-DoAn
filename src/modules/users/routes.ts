@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthMiddleware } from '../../middlewares/auth.js';
+import { uploadAvatar, handleUploadError } from '../../middlewares/avatarUpload.js';
 import {
   listUsers,
   createUser,
@@ -12,6 +13,8 @@ import {
   getMyProfile,
   updateMyProfile,
   changeMyPassword,
+  uploadMyAvatar,
+  deleteMyAvatar,
 } from './controller.js';
 
 export const usersRouter = Router();
@@ -23,6 +26,8 @@ usersRouter.use(AuthMiddleware.authenticate);
 usersRouter.get('/me', getMyProfile);
 usersRouter.put('/me', updateMyProfile);
 usersRouter.put('/me/change-password', changeMyPassword);
+usersRouter.post('/me/avatar', uploadAvatar, handleUploadError, uploadMyAvatar);
+usersRouter.delete('/me/avatar', deleteMyAvatar);
 
 // CRUD routes
 usersRouter.get('/', listUsers); // Cho phép tất cả user đã authenticate search

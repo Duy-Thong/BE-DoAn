@@ -625,4 +625,173 @@ export class CVService {
   async downloadCV(cvId: string, userId: string) {
     return await this.getCVWithDetails(cvId, userId);
   }
+
+  // Duplicate CV
+  async duplicateCV(cvId: string, userId: string, newTitle: string) {
+    return await prisma.$transaction(async (tx) => {
+      // Lấy CV gốc với tất cả nested data
+      const originalCV = await tx.cV.findFirst({
+        where: { id: cvId, userId },
+        include: {
+          workExperience: true,
+          education: true,
+          languages: true,
+          skills: true,
+          certifications: true,
+          projects: true,
+          achievements: true,
+          references: true,
+          activities: true,
+        }
+      });
+
+      if (!originalCV) {
+        throw createNotFoundError('CV không tồn tại');
+      }
+
+      // Tạo CV mới với thông tin cơ bản
+      const newCV = await tx.cV.create({
+        data: {
+          title: newTitle,
+          fullName: originalCV.fullName,
+          email: originalCV.email,
+          phoneNumber: originalCV.phoneNumber,
+          dateOfBirth: originalCV.dateOfBirth,
+          gender: originalCV.gender,
+          nationality: originalCV.nationality,
+          address: originalCV.address,
+          avatarUrl: originalCV.avatarUrl,
+          currentPosition: originalCV.currentPosition,
+          summary: originalCV.summary,
+          objective: originalCV.objective,
+          userId,
+          isMain: false, // CV duplicate không bao giờ là main
+          embedding: [],
+        },
+      });
+
+      // Duplicate Work Experience
+      if (originalCV.workExperience.length > 0) {
+        await tx.workExperience.createMany({
+          data: originalCV.workExperience.map(exp => ({
+            cvId: newCV.id,
+            title: exp.title,
+            company: exp.company,
+            startDate: exp.startDate,
+            endDate: exp.endDate,
+            description: exp.description,
+          }))
+        });
+      }
+
+      // Duplicate Education
+      if (originalCV.education.length > 0) {
+        await tx.education.createMany({
+          data: originalCV.education.map(edu => ({
+            cvId: newCV.id,
+            institution: edu.institution,
+            degree: edu.degree,
+            startDate: edu.startDate,
+            endDate: edu.endDate,
+            description: edu.description,
+          }))
+        });
+      }
+
+      // Duplicate Languages
+      if (originalCV.languages.length > 0) {
+        await tx.language.createMany({
+          data: originalCV.languages.map(lang => ({
+            cvId: newCV.id,
+            name: lang.name,
+            level: lang.level,
+            description: lang.description,
+          }))
+        });
+      }
+
+      // Duplicate Skills
+      if (originalCV.skills.length > 0) {
+        await tx.cVSkill.createMany({
+          data: originalCV.skills.map(skill => ({
+            cvId: newCV.id,
+            skillName: skill.skillName,
+            level: skill.level,
+            yearsOfExperience: skill.yearsOfExperience,
+            description: skill.description,
+          }))
+        });
+      }
+
+      // Duplicate Certifications
+      if (originalCV.certifications.length > 0) {
+        await tx.certification.createMany({
+          data: originalCV.certifications.map(cert => ({
+            cvId: newCV.id,
+            name: cert.name,
+            issuer: cert.issuer,
+            acquiredAt: cert.acquiredAt,
+            description: cert.description,
+          }))
+        });
+      }
+
+      // Duplicate Projects
+      if (originalCV.projects.length > 0) {
+        await tx.project.createMany({
+          data: originalCV.projects.map(proj => ({
+            cvId: newCV.id,
+            name: proj.name,
+            description: proj.description,
+            startDate: proj.startDate,
+            endDate: proj.endDate,
+            url: proj.url,
+            role: proj.role,
+          }))
+        });
+      }
+
+      // Duplicate Achievements
+      if (originalCV.achievements.length > 0) {
+        await tx.achievement.createMany({
+          data: originalCV.achievements.map(ach => ({
+            cvId: newCV.id,
+            title: ach.title,
+            description: ach.description,
+            acquiredAt: ach.acquiredAt,
+          }))
+        });
+      }
+
+      // Duplicate References
+      if (originalCV.references.length > 0) {
+        await tx.reference.createMany({
+          data: originalCV.references.map(ref => ({
+            cvId: newCV.id,
+            name: ref.name,
+            position: ref.position,
+            company: ref.company,
+            description: ref.description,
+          }))
+        });
+      }
+
+      // Duplicate Activities
+      if (originalCV.activities.length > 0) {
+        await tx.activity.createMany({
+          data: originalCV.activities.map(act => ({
+            cvId: newCV.id,
+            title: act.title,
+            organization: act.organization,
+            startDate: act.startDate,
+            endDate: act.endDate,
+            description: act.description,
+          }))
+        });
+      }
+
+      // Trả về CV mới với tất cả nested data
+      return await this.getCVById(newCV.id, userId);
+    });
+  }
 }

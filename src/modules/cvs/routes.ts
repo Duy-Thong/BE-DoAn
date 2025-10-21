@@ -18,6 +18,7 @@ router.get('/:cvId', cvController.getCVById.bind(cvController));
 router.get('/:cvId/download', cvController.downloadCV.bind(cvController)); // Download CV as PDF
 router.put('/:cvId', cvController.updateCompleteCV.bind(cvController)); // Chỉ dùng Complete API
 router.delete('/:cvId', cvController.deleteCV.bind(cvController));
+router.post('/:cvId/duplicate', cvController.duplicateCV.bind(cvController)); // Duplicate CV
 router.post('/set-main', cvController.setMainCV.bind(cvController));
 
 // CV nested submodules routes
