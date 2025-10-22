@@ -13,12 +13,12 @@ export class ReferenceController {
       res.status(201).json({ 
         success: true,
         data: reference,
-        message: 'Tạo người tham khảo thành công'
+        message: 'Tạo Người giới thiệu thành công'
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Không thể tạo người tham khảo'
+        error: error instanceof Error ? error.message : 'Không thể tạo Người giới thiệu'
       });
     }
   }
@@ -34,7 +34,7 @@ export class ReferenceController {
     } catch (error) {
       res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Không thể lấy danh sách người tham khảo'
+        error: error instanceof Error ? error.message : 'Không thể lấy danh sách Người giới thiệu'
       });
     }
   }
@@ -46,7 +46,7 @@ export class ReferenceController {
       if (!reference) {
         return res.status(404).json({ 
           success: false,
-          error: 'Người tham khảo không tìm thấy' 
+          error: 'Người giới thiệu không tìm thấy' 
         });
       }
       res.json({ 
@@ -56,7 +56,7 @@ export class ReferenceController {
     } catch (error) {
       res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Không thể lấy thông tin người tham khảo'
+        error: error instanceof Error ? error.message : 'Không thể lấy thông tin Người giới thiệu'
       });
     }
   }
@@ -69,12 +69,12 @@ export class ReferenceController {
       res.json({ 
         success: true,
         data: reference,
-        message: 'Cập nhật người tham khảo thành công'
+        message: 'Cập nhật Người giới thiệu thành công'
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Không thể cập nhật người tham khảo'
+        error: error instanceof Error ? error.message : 'Không thể cập nhật Người giới thiệu'
       });
     }
   }
@@ -85,12 +85,12 @@ export class ReferenceController {
       await service.deleteReference(cvId, id);
       res.json({
         success: true,
-        message: 'Xóa người tham khảo thành công'
+        message: 'Xóa Người giới thiệu thành công'
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Không thể xóa người tham khảo'
+        error: error instanceof Error ? error.message : 'Không thể xóa Người giới thiệu'
       });
     }
   }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createReferenceDto = z.object({
-  name: z.string().min(1, 'Tên người tham khảo không được để trống'),
+  name: z.string().min(1, 'Tên Người giới thiệu không được để trống'),
   position: z.string().min(1, 'Chức vụ không được để trống'),
   company: z.string().min(1, 'Công ty không được để trống'),
   email: z.string().email('Email không hợp lệ'),

@@ -369,7 +369,7 @@
       <!-- Summary Section -->
       {{#if cv.summary}}
       <div class="cv-section">
-        <h2 class="section-title">Summary</h2>
+        <h2 class="section-title">Tóm tắt</h2>
         <div class="cv-summary">{{cv.summary}}</div>
       </div>
       {{/if}}
@@ -377,7 +377,7 @@
       <!-- Objective Section -->
       {{#if cv.objective}}
       <div class="cv-section">
-        <h2 class="section-title">Career Objective</h2>
+        <h2 class="section-title">Mục tiêu nghề nghiệp</h2>
         <div class="section-content">{{cv.objective}}</div>
       </div>
       {{/if}}
@@ -385,7 +385,7 @@
       <!-- Work Experience Section -->
       {{#if workExperience}}
       <div class="cv-section">
-        <h2 class="section-title">Work Experience</h2>
+        <h2 class="section-title">Kinh nghiệm làm việc</h2>
         <div class="section-content">
           {{#each workExperience}}
           <div class="work-item">
@@ -396,7 +396,7 @@
               </div>
               <div class="work-dates">
                 {{formatDate this.startDate}} - {{#if this.endDate}}{{formatDate
-                this.endDate}}{{else}}Present{{/if}}
+                this.endDate}}{{else}}Hiện tại{{/if}}
               </div>
             </div>
             {{#if this.description}}
@@ -411,7 +411,7 @@
       <!-- Education Section -->
       {{#if education}}
       <div class="cv-section">
-        <h2 class="section-title">Education</h2>
+        <h2 class="section-title">Học vấn</h2>
         <div class="section-content">
           {{#each education}}
           <div class="education-item">
@@ -422,7 +422,7 @@
               </div>
               <div class="education-dates">
                 {{formatDate this.startDate}} - {{#if this.endDate}}{{formatDate
-                this.endDate}}{{else}}Present{{/if}}
+                this.endDate}}{{else}}Hiện tại{{/if}}
               </div>
             </div>
             {{#if this.description}}
@@ -437,18 +437,18 @@
       <!-- Skills Section -->
       {{#if skills}}
       <div class="cv-section">
-        <h2 class="section-title">Skills</h2>
+        <h2 class="section-title">Kỹ năng</h2>
         <div class="skills-grid">
           {{#each skills}}
           <div class="skill-item">
             <div>
               <span class="skill-name">{{this.skillName}}</span>
               {{#if this.yearsOfExperience}}
-              <span class="skill-years">({{this.yearsOfExperience}} years)</span>
+              <span class="skill-years">({{this.yearsOfExperience}} năm)</span>
               {{/if}}
             </div>
             <div style="display: flex; align-items: center">
-              <span class="skill-level">{{this.level}}</span>
+              <span class="skill-level">{{translateSkillLevel this.level}}</span>
               <div class="skill-bar">
                 <div class="skill-progress" style="width: {{getSkillProgress this.level}}%"></div>
               </div>
@@ -469,7 +469,7 @@
       <!-- Projects Section -->
       {{#if projects}}
       <div class="cv-section">
-        <h2 class="section-title">Projects</h2>
+        <h2 class="section-title">Dự án</h2>
         <div class="section-content">
           {{#each projects}}
           <div class="project-item">
@@ -482,7 +482,7 @@
               </div>
               <div class="project-dates">
                 {{formatDate this.startDate}} - {{#if this.endDate}}{{formatDate
-                this.endDate}}{{else}}Present{{/if}}
+                this.endDate}}{{else}}Hiện tại{{/if}}
               </div>
             </div>
             {{#if this.url}}
@@ -499,7 +499,7 @@
       <!-- Certifications Section -->
       {{#if certifications}}
       <div class="cv-section">
-        <h2 class="section-title">Certifications</h2>
+        <h2 class="section-title">Chứng chỉ</h2>
         <div class="section-content">
           {{#each certifications}}
           <div class="cert-item">
@@ -522,13 +522,13 @@
       <!-- Languages Section -->
       {{#if languages}}
       <div class="cv-section">
-        <h2 class="section-title">Languages</h2>
+        <h2 class="section-title">Ngôn ngữ</h2>
         <div class="section-content">
           {{#each languages}}
           <div class="language-item">
             <div>
               <span class="language-name">{{this.name}}</span>
-              <span class="language-level">{{this.level}}</span>
+              <span class="language-level">{{translateLanguageLevel this.proficiency}}</span>
             </div>
             {{#if this.description}}
             <div class="language-description">{{this.description}}</div>
@@ -542,7 +542,7 @@
       <!-- Achievements Section -->
       {{#if achievements}}
       <div class="cv-section">
-        <h2 class="section-title">Achievements</h2>
+        <h2 class="section-title">Thành tích</h2>
         <div class="section-content">
           {{#each achievements}}
           <div class="cert-item">
@@ -564,7 +564,7 @@
       <!-- Activities Section -->
       {{#if activities}}
       <div class="cv-section">
-        <h2 class="section-title">Activities</h2>
+        <h2 class="section-title">Hoạt động</h2>
         <div class="section-content">
           {{#each activities}}
           <div class="work-item">
@@ -575,7 +575,7 @@
               </div>
               <div class="work-dates">
                 {{formatDate this.startDate}} - {{#if this.endDate}}{{formatDate
-                this.endDate}}{{else}}Present{{/if}}
+                this.endDate}}{{else}}Hiện tại{{/if}}
               </div>
             </div>
             {{#if this.description}}
@@ -590,7 +590,7 @@
       <!-- References Section -->
       {{#if references}}
       <div class="cv-section">
-        <h2 class="section-title">References</h2>
+        <h2 class="section-title">Người giới thiệu</h2>
         <div class="section-content">
           {{#each references}}
           <div class="work-item">

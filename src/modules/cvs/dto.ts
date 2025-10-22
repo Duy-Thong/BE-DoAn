@@ -83,7 +83,7 @@ export const achievementItemDto = z.object({
 });
 
 export const referenceItemDto = z.object({
-  name: z.string().min(1, 'Tên người tham khảo không được để trống'),
+  name: z.string().min(1, 'Tên Người giới thiệu không được để trống'),
   position: z.string().optional(),
   company: z.string().optional(),
   description: z.string().optional(),

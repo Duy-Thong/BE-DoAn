@@ -105,6 +105,89 @@ export class PDFGeneratorService {
       if (!str || str.length <= len) return str;
       return str.substring(0, len) + '...';
     });
+
+    // Translate skill level to Vietnamese
+    Handlebars.registerHelper('translateSkillLevel', (level: string) => {
+      const skillLevelMap: Record<string, string> = {
+        'BEGINNER': 'Mới bắt đầu',
+        'INTERMEDIATE': 'Trung bình',
+        'ADVANCED': 'Nâng cao',
+        'EXPERT': 'Chuyên gia'
+      };
+      return skillLevelMap[level] || level;
+    });
+
+    // Translate language proficiency to Vietnamese
+    Handlebars.registerHelper('translateLanguageLevel', (level: string) => {
+      const languageLevelMap: Record<string, string> = {
+        'BASIC': 'Cơ bản',
+        'CONVERSATIONAL': 'Giao tiếp',
+        'PROFESSIONAL': 'Chuyên nghiệp',
+        'NATIVE': 'Bản ngữ'
+      };
+      return languageLevelMap[level] || level;
+    });
+
+    // Translate gender to Vietnamese
+    Handlebars.registerHelper('translateGender', (gender: string) => {
+      const genderMap: Record<string, string> = {
+        'MALE': 'Nam',
+        'FEMALE': 'Nữ',
+        'OTHER': 'Khác',
+        'PREFER_NOT_TO_SAY': 'Không muốn nói'
+      };
+      return genderMap[gender] || gender;
+    });
+
+    // Translate education level to Vietnamese
+    Handlebars.registerHelper('translateEducationLevel', (level: string) => {
+      const educationLevelMap: Record<string, string> = {
+        'HIGH_SCHOOL': 'Trung học phổ thông',
+        'ASSOCIATE': 'Cao đẳng',
+        'BACHELOR': 'Cử nhân',
+        'MASTER': 'Thạc sĩ',
+        'DOCTORATE': 'Tiến sĩ',
+        'CERTIFICATE': 'Chứng chỉ',
+        'DIPLOMA': 'Bằng tốt nghiệp'
+      };
+      return educationLevelMap[level] || level;
+    });
+
+    // Translate employment type to Vietnamese
+    Handlebars.registerHelper('translateEmploymentType', (type: string) => {
+      const employmentTypeMap: Record<string, string> = {
+        'FULL_TIME': 'Toàn thời gian',
+        'PART_TIME': 'Bán thời gian',
+        'CONTRACT': 'Hợp đồng',
+        'INTERNSHIP': 'Thực tập',
+        'FREELANCE': 'Tự do',
+        'VOLUNTEER': 'Tình nguyện'
+      };
+      return employmentTypeMap[type] || type;
+    });
+
+    // Translate project status to Vietnamese
+    Handlebars.registerHelper('translateProjectStatus', (status: string) => {
+      const projectStatusMap: Record<string, string> = {
+        'PLANNING': 'Lập kế hoạch',
+        'IN_PROGRESS': 'Đang thực hiện',
+        'COMPLETED': 'Hoàn thành',
+        'ON_HOLD': 'Tạm dừng',
+        'CANCELLED': 'Đã hủy'
+      };
+      return projectStatusMap[status] || status;
+    });
+
+    // Translate certification status to Vietnamese
+    Handlebars.registerHelper('translateCertificationStatus', (status: string) => {
+      const certificationStatusMap: Record<string, string> = {
+        'ACTIVE': 'Còn hiệu lực',
+        'EXPIRED': 'Hết hạn',
+        'PENDING': 'Chờ xử lý',
+        'REVOKED': 'Bị thu hồi'
+      };
+      return certificationStatusMap[status] || status;
+    });
   }
 
   /**
