@@ -5,6 +5,7 @@ import { CompanyRole } from '../../generated/prisma/index.js';
 import { ResponseUtils } from '../../utils/response.js';
 import { AppError } from '../../utils/error.js';
 import { ErrorCode } from '../../utils/error-codes.js';
+import { FirebaseStorageService } from '../../services/firebase-storage.js';
 
 const service = new CompaniesService();
 
@@ -220,6 +221,266 @@ export class CompaniesController {
         return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
       return ResponseUtils.internalError(res, 'Lỗi khi cập nhật vai trò');
+    }
+  }
+
+  // Upload company logo
+  async uploadLogo(req: Request, res: Response) {
+    try {
+      const companyId = req.params.id;
+      
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'Không có file được tải lên',
+        });
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Loại file không được hỗ trợ. Chỉ chấp nhận PNG, JPEG, JPG, WEBP',
+        });
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (req.file.size > maxSize) {
+        return res.status(400).json({
+          success: false,
+          error: 'File quá lớn. Kích thước tối đa là 5MB',
+        });
+      }
+
+      // Get current company to check for existing logo
+      const currentCompany = await service.getById(companyId);
+      const oldLogoUrl = currentCompany.logoUrl;
+
+      // Generate unique path for logo
+      const logoPath = FirebaseStorageService.generateLogoPath(companyId, req.file.originalname);
+      
+      // Upload to Firebase Storage
+      const logoUrl = await FirebaseStorageService.uploadFile(req.file, logoPath, {
+        companyId,
+        type: 'logo',
+        uploadedAt: new Date().toISOString()
+      });
+
+      // Update company's logo URL in database
+      const company = await service.update(companyId, { logoUrl });
+
+      // Delete old logo from Firebase Storage if it exists and is from Firebase Storage
+      if (oldLogoUrl && oldLogoUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+          // Extract file path from Firebase Storage URL
+          const url = new URL(oldLogoUrl);
+          const pathMatch = url.pathname.match(/\/o\/(.+)\?/);
+          if (pathMatch) {
+            const oldFilePath = decodeURIComponent(pathMatch[1]);
+            await FirebaseStorageService.deleteFile(oldFilePath);
+          }
+        } catch (deleteError) {
+          // Log error but don't fail the upload
+          console.warn('Failed to delete old logo:', deleteError);
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          logoUrl,
+          company: {
+            id: company.id,
+            name: company.name,
+            logoUrl: company.logoUrl
+          }
+        },
+        message: 'Tải lên logo thành công',
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi tải lên logo');
+    }
+  }
+
+  // Delete company logo
+  async deleteLogo(req: Request, res: Response) {
+    try {
+      const companyId = req.params.id;
+
+      // Get current company to check for existing logo
+      const currentCompany = await service.getById(companyId);
+      const oldLogoUrl = currentCompany.logoUrl;
+
+      // Update company's logo URL to null in database
+      const company = await service.update(companyId, { logoUrl: null });
+
+      // Delete old logo from Firebase Storage if it exists and is from Firebase Storage
+      if (oldLogoUrl && oldLogoUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+          // Extract file path from Firebase Storage URL
+          const url = new URL(oldLogoUrl);
+          const pathMatch = url.pathname.match(/\/o\/(.+)\?/);
+          if (pathMatch) {
+            const oldFilePath = decodeURIComponent(pathMatch[1]);
+            await FirebaseStorageService.deleteFile(oldFilePath);
+          }
+        } catch (deleteError) {
+          // Log error but don't fail the operation
+          console.warn('Failed to delete old logo:', deleteError);
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          company: {
+            id: company.id,
+            name: company.name,
+            logoUrl: company.logoUrl
+          }
+        },
+        message: 'Xóa logo thành công',
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi xóa logo');
+    }
+  }
+
+  // Upload company banner
+  async uploadBanner(req: Request, res: Response) {
+    try {
+      const companyId = req.params.id;
+      
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'Không có file được tải lên',
+        });
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Loại file không được hỗ trợ. Chỉ chấp nhận PNG, JPEG, JPG, WEBP',
+        });
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (req.file.size > maxSize) {
+        return res.status(400).json({
+          success: false,
+          error: 'File quá lớn. Kích thước tối đa là 5MB',
+        });
+      }
+
+      // Get current company to check for existing banner
+      const currentCompany = await service.getById(companyId);
+      const oldBannerUrl = currentCompany.bannerUrl;
+
+      // Generate unique path for banner
+      const bannerPath = `banners/${companyId}/${Date.now()}.${req.file.originalname.split('.').pop()}`;
+      
+      // Upload to Firebase Storage
+      const bannerUrl = await FirebaseStorageService.uploadFile(req.file, bannerPath, {
+        companyId,
+        type: 'banner',
+        uploadedAt: new Date().toISOString()
+      });
+
+      // Update company's banner URL in database
+      const company = await service.update(companyId, { bannerUrl });
+
+      // Delete old banner from Firebase Storage if it exists and is from Firebase Storage
+      if (oldBannerUrl && oldBannerUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+          // Extract file path from Firebase Storage URL
+          const url = new URL(oldBannerUrl);
+          const pathMatch = url.pathname.match(/\/o\/(.+)\?/);
+          if (pathMatch) {
+            const oldFilePath = decodeURIComponent(pathMatch[1]);
+            await FirebaseStorageService.deleteFile(oldFilePath);
+          }
+        } catch (deleteError) {
+          // Log error but don't fail the upload
+          console.warn('Failed to delete old banner:', deleteError);
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          bannerUrl,
+          company: {
+            id: company.id,
+            name: company.name,
+            bannerUrl: company.bannerUrl
+          }
+        },
+        message: 'Tải lên banner thành công',
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi tải lên banner');
+    }
+  }
+
+  // Delete company banner
+  async deleteBanner(req: Request, res: Response) {
+    try {
+      const companyId = req.params.id;
+
+      // Get current company to check for existing banner
+      const currentCompany = await service.getById(companyId);
+      const oldBannerUrl = currentCompany.bannerUrl;
+
+      // Update company's banner URL to null in database
+      const company = await service.update(companyId, { bannerUrl: null });
+
+      // Delete old banner from Firebase Storage if it exists and is from Firebase Storage
+      if (oldBannerUrl && oldBannerUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+          // Extract file path from Firebase Storage URL
+          const url = new URL(oldBannerUrl);
+          const pathMatch = url.pathname.match(/\/o\/(.+)\?/);
+          if (pathMatch) {
+            const oldFilePath = decodeURIComponent(pathMatch[1]);
+            await FirebaseStorageService.deleteFile(oldFilePath);
+          }
+        } catch (deleteError) {
+          // Log error but don't fail the operation
+          console.warn('Failed to delete old banner:', deleteError);
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          company: {
+            id: company.id,
+            name: company.name,
+            bannerUrl: company.bannerUrl
+          }
+        },
+        message: 'Xóa banner thành công',
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+      }
+      return ResponseUtils.internalError(res, 'Lỗi khi xóa banner');
     }
   }
 }

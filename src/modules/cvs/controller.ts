@@ -28,7 +28,14 @@ export class CVController {
       }
 
       if (error instanceof Error && error.name === 'ZodError') {
-        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
+        const zodError = error as any;
+        const validationErrors = zodError.issues?.map((issue: any) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+          received: issue.received
+        }));
+        console.error('Validation errors:', JSON.stringify(validationErrors, null, 2));
+        return ResponseUtils.error(res, 'Dữ liệu không hợp lệ', 400, validationErrors, ErrorCode.VAL_INVALID_FORMAT);
       }
 
       return ResponseUtils.internalError(res, 'Lỗi khi tạo CV hoàn chỉnh');
@@ -192,13 +199,14 @@ export class CVController {
       }
 
       // Kiểm tra template có tồn tại không
-      if (!pdfGeneratorService.templateExists(template as string)) {
+      const templateExists = await pdfGeneratorService.templateExists(template as string);
+      if (!templateExists) {
         return ResponseUtils.error(res, 'Template không tồn tại', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
       }
 
       // Tạo PDF
       const pdfOptions: PDFGenerationOptions = {
-        template: template as 'default' | 'modern' | 'harvard',
+        template: template as string,
         format: format as 'A4' | 'Letter',
         printBackground: true
       };
@@ -239,13 +247,14 @@ export class CVController {
       }
 
       // Kiểm tra template có tồn tại không
-      if (!pdfGeneratorService.templateExists(template as string)) {
+      const templateExists = await pdfGeneratorService.templateExists(template as string);
+      if (!templateExists) {
         return ResponseUtils.error(res, 'Template không tồn tại', 400, undefined, ErrorCode.VAL_INVALID_FORMAT);
       }
 
       // Tạo PDF
       const pdfOptions: PDFGenerationOptions = {
-        template: template as 'default' | 'modern' | 'harvard',
+        template: template as string,
         format: format as 'A4' | 'Letter',
         printBackground: true
       };
@@ -272,7 +281,7 @@ export class CVController {
   // Get available templates
   async getTemplates(req: Request, res: Response) {
     try {
-      const templates = pdfGeneratorService.getAvailableTemplates();
+      const templates = await pdfGeneratorService.getAvailableTemplates();
       return ResponseUtils.success(res, { templates }, 'Lấy danh sách templates thành công');
     } catch (error) {
       return ResponseUtils.internalError(res, 'Lỗi khi lấy danh sách templates');

@@ -46,6 +46,7 @@ export class CompaniesService {
           phone: true,
           email: true,
           logoUrl: true,
+        bannerUrl: true,
           isVerified: true,
           isActive: true,
           isEmailVerified: true,
@@ -100,6 +101,7 @@ export class CompaniesService {
         phone: true,
         email: true,
         logoUrl: true,
+        bannerUrl: true,
         isVerified: true,
         isActive: true,
         isEmailVerified: true,
@@ -127,6 +129,7 @@ export class CompaniesService {
         phone: true,
         email: true,
         logoUrl: true,
+        bannerUrl: true,
         isVerified: true,
         isActive: true,
         isEmailVerified: true,
@@ -181,6 +184,7 @@ export class CompaniesService {
     if (input.phone !== undefined) data.phone = input.phone;
     if (input.email !== undefined) data.email = input.email;
     if (input.logoUrl !== undefined) data.logoUrl = input.logoUrl;
+    if (input.bannerUrl !== undefined) data.bannerUrl = input.bannerUrl;
     if (input.isVerified !== undefined) data.isVerified = input.isVerified;
     if (input.isActive !== undefined) data.isActive = input.isActive;
     if (input.isEmailVerified !== undefined) data.isEmailVerified = input.isEmailVerified;
@@ -200,6 +204,7 @@ export class CompaniesService {
         phone: true,
         email: true,
         logoUrl: true,
+        bannerUrl: true,
         isVerified: true,
         isActive: true,
         isEmailVerified: true,

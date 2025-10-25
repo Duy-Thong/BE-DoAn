@@ -20,9 +20,14 @@ export function validateBody<T>(schema: z.ZodSchema<T>) {
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
+          received: err.input,
         }));
         
-        next(new ValidationError('Dữ liệu không hợp lệ', errors));
+        // Tạo thông báo lỗi chi tiết
+        const errorMessages = errors.map(err => `${err.field}: ${err.message}`).join(', ');
+        const detailedMessage = `Validation failed: ${errorMessages}`;
+        
+        next(new ValidationError(detailedMessage, errors));
       } else {
         next(error);
       }
@@ -44,9 +49,14 @@ export function validateQuery<T>(schema: z.ZodSchema<T>) {
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
+          received: err.input,
         }));
         
-        next(new ValidationError('Tham số truy vấn không hợp lệ', errors));
+        // Tạo thông báo lỗi chi tiết
+        const errorMessages = errors.map(err => `${err.field}: ${err.message}`).join(', ');
+        const detailedMessage = `Query validation failed: ${errorMessages}`;
+        
+        next(new ValidationError(detailedMessage, errors));
       } else {
         next(error);
       }
@@ -68,9 +78,14 @@ export function validateParams<T>(schema: z.ZodSchema<T>) {
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
+          received: err.input,
         }));
         
-        next(new ValidationError('Tham số đường dẫn không hợp lệ', errors));
+        // Tạo thông báo lỗi chi tiết
+        const errorMessages = errors.map(err => `${err.field}: ${err.message}`).join(', ');
+        const detailedMessage = `Parameter validation failed: ${errorMessages}`;
+        
+        next(new ValidationError(detailedMessage, errors));
       } else {
         next(error);
       }
@@ -92,9 +107,14 @@ export function validateHeaders<T>(schema: z.ZodSchema<T>) {
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
+          received: err.input,
         }));
         
-        next(new ValidationError('Header không hợp lệ', errors));
+        // Tạo thông báo lỗi chi tiết
+        const errorMessages = errors.map(err => `${err.field}: ${err.message}`).join(', ');
+        const detailedMessage = `Header validation failed: ${errorMessages}`;
+        
+        next(new ValidationError(detailedMessage, errors));
       } else {
         next(error);
       }

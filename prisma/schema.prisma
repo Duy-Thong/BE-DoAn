@@ -41,6 +41,10 @@ model User {
   cvs             CV[]
   notifications   Notification[]
   
+  // CV Template management relations
+  createdTemplates CVTemplate[] @relation("TemplateCreatedBy")
+  updatedTemplates CVTemplate[] @relation("TemplateUpdatedBy")
+  
   // Social media profiles (polymorphic relationship via ownerType + ownerId)
   
   @@index([email])
@@ -63,6 +67,7 @@ model Company {
   phone           String?
   email           String?
   logoUrl         String?
+  bannerUrl       String?
   isVerified      Boolean  @default(false)
   isActive        Boolean  @default(true)
   isEmailVerified Boolean  @default(false)
@@ -538,5 +543,48 @@ model Upload {
   @@index([userId])
   @@index([category])
   @@index([createdAt])
+}
+
+// CV Template management
+model CVTemplate {
+  id          String   @id @default(cuid())
+  name        String   // Template name: "Modern", "Classic", "Creative"
+  slug        String   @unique // URL-friendly identifier
+  description String?  // Template description
+  category    String   // "professional", "creative", "academic", "minimal"
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false) // Default template for new users
+  isPremium   Boolean  @default(false) // Premium template (paid)
+  
+  // Firebase Storage URLs - chỉ lưu URL, không lưu content
+  htmlUrl     String   // Firebase Storage URL for HTML file (required)
+  previewUrl  String?  // Preview image URL
+  
+  // Template metadata
+  version     String   @default("1.0.0")
+  author      String?  // Template author
+  tags        String[] // Tags for filtering: ["modern", "tech", "design"]
+  
+  // Usage statistics
+  usageCount  Int      @default(0)
+  downloadCount Int    @default(0)
+  
+  // Admin management
+  createdBy   String?  // Admin user who created this template
+  updatedBy   String?  // Admin user who last updated
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  createdByUser User? @relation("TemplateCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User? @relation("TemplateUpdatedBy", fields: [updatedBy], references: [id])
+  
+  @@index([slug])
+  @@index([category])
+  @@index([isActive])
+  @@index([isDefault])
+  @@index([isPremium])
+  @@index([createdAt])
+  @@index([usageCount])
 }
 

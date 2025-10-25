@@ -44,6 +44,7 @@ CREATE TABLE "public"."User" (
     "role" "public"."UserRole" NOT NULL DEFAULT 'CANDIDATE',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isLocked" BOOLEAN NOT NULL DEFAULT false,
+    "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
     "lastLoginAt" TIMESTAMP(3),
     "avatarUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -68,6 +69,7 @@ CREATE TABLE "public"."Company" (
     "phone" TEXT,
     "email" TEXT,
     "logoUrl" TEXT,
+    "bannerUrl" TEXT,
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
@@ -358,6 +360,31 @@ CREATE TABLE "public"."Upload" (
     CONSTRAINT "Upload_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "public"."CVTemplate" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "description" TEXT,
+    "category" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "isPremium" BOOLEAN NOT NULL DEFAULT false,
+    "htmlUrl" TEXT NOT NULL,
+    "previewUrl" TEXT,
+    "version" TEXT NOT NULL DEFAULT '1.0.0',
+    "author" TEXT,
+    "tags" TEXT[],
+    "usageCount" INTEGER NOT NULL DEFAULT 0,
+    "downloadCount" INTEGER NOT NULL DEFAULT 0,
+    "createdBy" TEXT,
+    "updatedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CVTemplate_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
 
@@ -508,6 +535,30 @@ CREATE INDEX "Upload_category_idx" ON "public"."Upload"("category");
 -- CreateIndex
 CREATE INDEX "Upload_createdAt_idx" ON "public"."Upload"("createdAt");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "CVTemplate_slug_key" ON "public"."CVTemplate"("slug");
+
+-- CreateIndex
+CREATE INDEX "CVTemplate_slug_idx" ON "public"."CVTemplate"("slug");
+
+-- CreateIndex
+CREATE INDEX "CVTemplate_category_idx" ON "public"."CVTemplate"("category");
+
+-- CreateIndex
+CREATE INDEX "CVTemplate_isActive_idx" ON "public"."CVTemplate"("isActive");
+
+-- CreateIndex
+CREATE INDEX "CVTemplate_isDefault_idx" ON "public"."CVTemplate"("isDefault");
+
+-- CreateIndex
+CREATE INDEX "CVTemplate_isPremium_idx" ON "public"."CVTemplate"("isPremium");
+
+-- CreateIndex
+CREATE INDEX "CVTemplate_createdAt_idx" ON "public"."CVTemplate"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "CVTemplate_usageCount_idx" ON "public"."CVTemplate"("usageCount");
+
 -- AddForeignKey
 ALTER TABLE "public"."User" ADD CONSTRAINT "User_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "public"."Company"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -567,3 +618,9 @@ ALTER TABLE "public"."JobBenefit" ADD CONSTRAINT "JobBenefit_jobId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "public"."JobSkill" ADD CONSTRAINT "JobSkill_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "public"."Job"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."CVTemplate" ADD CONSTRAINT "CVTemplate_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."CVTemplate" ADD CONSTRAINT "CVTemplate_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

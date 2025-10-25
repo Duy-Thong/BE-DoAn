@@ -33,7 +33,7 @@ export const workExperienceItemDto = z.object({
   title: z.string().min(1, 'Chức vụ không được để trống'),
   company: z.string().min(1, 'Công ty không được để trống'),
   startDate: z.string().datetime('Ngày bắt đầu không hợp lệ'),
-  endDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().nullish(),
   description: z.string().optional(),
 });
 
@@ -41,7 +41,7 @@ export const educationItemDto = z.object({
   institution: z.string().min(1, 'Trường học không được để trống'),
   degree: z.string().min(1, 'Bằng cấp không được để trống'),
   startDate: z.string().datetime('Ngày bắt đầu không hợp lệ'),
-  endDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().nullish(),
   description: z.string().optional(),
 });
 
@@ -56,7 +56,7 @@ export const projectItemDto = z.object({
   name: z.string().min(1, 'Tên dự án không được để trống'),
   description: z.string().optional(),
   startDate: z.string().datetime('Ngày bắt đầu không hợp lệ'),
-  endDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().nullish(),
   url: z.string().url().optional(),
   role: z.string().optional(),
 });
@@ -93,7 +93,7 @@ export const activityItemDto = z.object({
   title: z.string().min(1, 'Tên hoạt động không được để trống'),
   organization: z.string().optional(),
   startDate: z.string().datetime('Ngày bắt đầu không hợp lệ'),
-  endDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().nullish(),
   description: z.string().optional(),
 });
 

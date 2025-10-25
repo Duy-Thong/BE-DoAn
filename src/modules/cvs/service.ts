@@ -793,7 +793,20 @@ export class CVService {
       }
 
       // Trả về CV mới với tất cả nested data
-      return await this.getCVById(newCV.id, userId);
+      return await tx.cV.findUnique({
+        where: { id: newCV.id },
+        include: {
+          workExperience: true,
+          education: true,
+          languages: true,
+          certifications: true,
+          projects: true,
+          achievements: true,
+          references: true,
+          skills: true,
+          activities: true,
+        }
+      });
     });
   }
 }

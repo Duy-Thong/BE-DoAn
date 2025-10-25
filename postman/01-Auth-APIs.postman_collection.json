@@ -1,0 +1,527 @@
+{
+  "info": {
+    "name": "01 - Auth APIs",
+    "_postman_id": "auth-apis-collection-2025",
+    "description": "Authentication APIs with automatic token management and test scripts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "const response = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "// Test response structure",
+              "pm.test(\"Response has success field\", function () {",
+              "    pm.expect(response).to.have.property('success', true);",
+              "});",
+              "",
+              "pm.test(\"Response has data object\", function () {",
+              "    pm.expect(response).to.have.property('data');",
+              "    pm.expect(response.data).to.be.an('object');",
+              "});",
+              "",
+              "// Save user data if registration successful",
+              "if (response.success && response.data) {",
+              "    if (response.data.user) {",
+              "        pm.environment.set(\"testUserId\", response.data.user.id);",
+              "        pm.environment.set(\"testEmail\", response.data.user.email);",
+              "        console.log(\"✓ Saved testUserId:\", response.data.user.id);",
+              "        console.log(\"✓ Saved testEmail:\", response.data.user.email);",
+              "    }",
+              "    ",
+              "    // Save tokens if provided",
+              "    if (response.data.accessToken) {",
+              "        pm.environment.set(\"authToken\", response.data.accessToken);",
+              "        console.log(\"✓ Saved authToken\");",
+              "    }",
+              "    ",
+              "    if (response.data.refreshToken) {",
+              "        pm.environment.set(\"refreshToken\", response.data.refreshToken);",
+              "        console.log(\"✓ Saved refreshToken\");",
+              "    }",
+              "}",
+              "",
+              "// Test data structure",
+              "pm.test(\"User data has required fields\", function () {",
+              "    if (response.data && response.data.user) {",
+              "        pm.expect(response.data.user).to.have.property('id');",
+              "        pm.expect(response.data.user).to.have.property('email');",
+              "        pm.expect(response.data.user).to.have.property('role');",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Generate unique email for testing",
+              "const timestamp = Date.now();",
+              "const randomNum = Math.floor(Math.random() * 1000);",
+              "const uniqueEmail = `test.user.${timestamp}.${randomNum}@example.com`;",
+              "",
+              "pm.environment.set(\"testEmail\", uniqueEmail);",
+              "console.log(\"Generated test email:\", uniqueEmail);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"fullName\": \"Test User\",\n  \"role\": \"CANDIDATE\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "register"]
+        },
+        "description": "Register a new user account. Automatically generates unique email and saves user data for subsequent requests."
+      },
+      "response": []
+    },
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "const response = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test response structure",
+              "pm.test(\"Response has success field\", function () {",
+              "    pm.expect(response).to.have.property('success', true);",
+              "});",
+              "",
+              "pm.test(\"Response has data object\", function () {",
+              "    pm.expect(response).to.have.property('data');",
+              "    pm.expect(response.data).to.be.an('object');",
+              "});",
+              "",
+              "// Test tokens",
+              "pm.test(\"Response has access token\", function () {",
+              "    pm.expect(response.data).to.have.property('accessToken');",
+              "    pm.expect(response.data.accessToken).to.be.a('string');",
+              "});",
+              "",
+              "pm.test(\"Response has refresh token\", function () {",
+              "    pm.expect(response.data).to.have.property('refreshToken');",
+              "    pm.expect(response.data.refreshToken).to.be.a('string');",
+              "});",
+              "",
+              "// Save tokens and user data",
+              "if (response.success && response.data) {",
+              "    pm.environment.set(\"authToken\", response.data.accessToken);",
+              "    pm.environment.set(\"refreshToken\", response.data.refreshToken);",
+              "    console.log(\"✓ Saved authToken\");",
+              "    console.log(\"✓ Saved refreshToken\");",
+              "    ",
+              "    if (response.data.user) {",
+              "        pm.environment.set(\"userId\", response.data.user.id);",
+              "        pm.environment.set(\"userEmail\", response.data.user.email);",
+              "        pm.environment.set(\"userRole\", response.data.user.role);",
+              "        console.log(\"✓ Saved userId:\", response.data.user.id);",
+              "        console.log(\"✓ Saved userEmail:\", response.data.user.email);",
+              "        console.log(\"✓ Saved userRole:\", response.data.user.role);",
+              "    }",
+              "}",
+              "",
+              "// Test user data",
+              "pm.test(\"User data has required fields\", function () {",
+              "    if (response.data && response.data.user) {",
+              "        pm.expect(response.data.user).to.have.property('id');",
+              "        pm.expect(response.data.user).to.have.property('email');",
+              "        pm.expect(response.data.user).to.have.property('role');",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin@123456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Login with email and password. Automatically saves access token, refresh token, and user information."
+      },
+      "response": []
+    },
+    {
+      "name": "Refresh Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "const response = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test response structure",
+              "pm.test(\"Response has new access token\", function () {",
+              "    pm.expect(response.data).to.have.property('accessToken');",
+              "    pm.expect(response.data.accessToken).to.be.a('string');",
+              "});",
+              "",
+              "pm.test(\"Response has new refresh token\", function () {",
+              "    pm.expect(response.data).to.have.property('refreshToken');",
+              "    pm.expect(response.data.refreshToken).to.be.a('string');",
+              "});",
+              "",
+              "// Update tokens",
+              "if (response.success && response.data) {",
+              "    pm.environment.set(\"authToken\", response.data.accessToken);",
+              "    pm.environment.set(\"refreshToken\", response.data.refreshToken);",
+              "    console.log(\"✓ Updated authToken\");",
+              "    console.log(\"✓ Updated refreshToken\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
+        },
+        "description": "Refresh access token using refresh token. Automatically updates both tokens."
+      },
+      "response": []
+    },
+    {
+      "name": "Verify Email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "const response = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test response",
+              "pm.test(\"Response has success field\", function () {",
+              "    pm.expect(response).to.have.property('success', true);",
+              "});",
+              "",
+              "pm.test(\"Response has message\", function () {",
+              "    pm.expect(response).to.have.property('message');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{verificationToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/verify-email",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "verify-email"]
+        },
+        "description": "Verify email address using verification token sent to email."
+      },
+      "response": []
+    },
+    {
+      "name": "Resend Verification",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "const response = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test response",
+              "pm.test(\"Response has success field\", function () {",
+              "    pm.expect(response).to.have.property('success', true);",
+              "});",
+              "",
+              "pm.test(\"Response has message\", function () {",
+              "    pm.expect(response).to.have.property('message');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/resend-verification",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "resend-verification"]
+        },
+        "description": "Resend email verification link."
+      },
+      "response": []
+    },
+    {
+      "name": "Forgot Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "const response = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test response",
+              "pm.test(\"Response has success field\", function () {",
+              "    pm.expect(response).to.have.property('success', true);",
+              "});",
+              "",
+              "pm.test(\"Response has message\", function () {",
+              "    pm.expect(response).to.have.property('message');",
+              "});",
+              "",
+              "// Save reset token if provided (for testing)",
+              "if (response.data && response.data.resetToken) {",
+              "    pm.environment.set(\"resetToken\", response.data.resetToken);",
+              "    console.log(\"✓ Saved resetToken for testing\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/forgot-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "forgot-password"]
+        },
+        "description": "Request password reset email."
+      },
+      "response": []
+    },
+    {
+      "name": "Reset Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "const response = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test response",
+              "pm.test(\"Response has success field\", function () {",
+              "    pm.expect(response).to.have.property('success', true);",
+              "});",
+              "",
+              "pm.test(\"Response has message\", function () {",
+              "    pm.expect(response).to.have.property('message');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"NewPassword@123456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/reset-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "reset-password"]
+        },
+        "description": "Reset password using reset token."
+      },
+      "response": []
+    },
+    {
+      "name": "Logout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Parse response",
+              "const response = pm.response.json();",
+              "",
+              "// Test status code",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Test response",
+              "pm.test(\"Response has success field\", function () {",
+              "    pm.expect(response).to.have.property('success', true);",
+              "});",
+              "",
+              "// Clear tokens on successful logout",
+              "if (response.success) {",
+              "    // Note: We don't clear tokens here to allow testing other endpoints",
+              "    // Uncomment below to clear tokens after logout",
+              "    // pm.environment.set(\"authToken\", \"\");",
+              "    // pm.environment.set(\"refreshToken\", \"\");",
+              "    console.log(\"✓ Logout successful (tokens not cleared for testing)\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "logout"]
+        },
+        "description": "Logout current user and invalidate tokens."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  }
+}

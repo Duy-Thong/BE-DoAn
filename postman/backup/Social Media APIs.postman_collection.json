@@ -1,0 +1,384 @@
+{
+  "info": {
+    "_postman_id": "5daffb7d-f823-4c5b-be2c-93bc9a2475e8",
+    "name": "Social Media APIs",
+    "description": "API collection for managing social media links for Companies and CVs in the Recruitment System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Company Social Media",
+      "item": [
+        {
+          "name": "List Company Social Media",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/social-media",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "social-media"]
+            },
+            "description": "Get all social media links for a company"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Company Social Media",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save social media ID",
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.environment.set('socialMediaId', jsonData.data.id);",
+                  "        console.log('✅ Auto-saved socialMediaId:', jsonData.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"LINKEDIN\",\n  \"url\": \"https://linkedin.com/company/techcompany\",\n  \"username\": \"techcompany\",\n  \"isPublic\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/social-media",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "social-media"]
+            },
+            "description": "Add a new social media link for a company"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Company Social Media",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/social-media/{{socialMediaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "social-media", "{{socialMediaId}}"]
+            },
+            "description": "Get a specific social media link for a company"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Company Social Media",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"LINKEDIN\",\n  \"url\": \"https://linkedin.com/company/techcompany-updated\",\n  \"username\": \"techcompany-updated\",\n  \"isPublic\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/social-media/{{socialMediaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "social-media", "{{socialMediaId}}"]
+            },
+            "description": "Update a social media link for a company"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Company Social Media",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/social-media/{{socialMediaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "social-media", "{{socialMediaId}}"]
+            },
+            "description": "Delete a social media link for a company"
+          },
+          "response": []
+        }
+      ],
+      "description": "APIs for managing company social media links"
+    },
+    {
+      "name": "CV Social Media",
+      "item": [
+        {
+          "name": "List CV Social Media",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cvs/{{cvId}}/social-media",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "{{cvId}}", "social-media"]
+            },
+            "description": "Get all social media links for a CV"
+          },
+          "response": []
+        },
+        {
+          "name": "Add CV Social Media",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save social media ID",
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.environment.set('socialMediaId', jsonData.data.id);",
+                  "        console.log('✅ Auto-saved socialMediaId:', jsonData.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"GITHUB\",\n  \"url\": \"https://github.com/username\",\n  \"username\": \"username\",\n  \"isPublic\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cvs/{{cvId}}/social-media",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "{{cvId}}", "social-media"]
+            },
+            "description": "Add a new social media link for a CV"
+          },
+          "response": []
+        },
+        {
+          "name": "Get CV Social Media",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cvs/{{cvId}}/social-media/{{socialMediaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "{{cvId}}", "social-media", "{{socialMediaId}}"]
+            },
+            "description": "Get a specific social media link for a CV"
+          },
+          "response": []
+        },
+        {
+          "name": "Update CV Social Media",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"GITHUB\",\n  \"url\": \"https://github.com/username-updated\",\n  \"username\": \"username-updated\",\n  \"isPublic\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cvs/{{cvId}}/social-media/{{socialMediaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "{{cvId}}", "social-media", "{{socialMediaId}}"]
+            },
+            "description": "Update a social media link for a CV"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete CV Social Media",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cvs/{{cvId}}/social-media/{{socialMediaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "{{cvId}}", "social-media", "{{socialMediaId}}"]
+            },
+            "description": "Delete a social media link for a CV"
+          },
+          "response": []
+        }
+      ],
+      "description": "APIs for managing CV social media links"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Log request name",
+          "console.log('🚀 Executing:', pm.info.requestName);",
+          "",
+          "// Check required variables",
+          "if (!pm.environment.get('accessToken')) {",
+          "    console.warn('⚠️ accessToken is not set in environment');",
+          "}",
+          "if (!pm.environment.get('baseUrl')) {",
+          "    console.warn('⚠️ baseUrl is not set in environment');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Common test for all requests",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response has success field', function () {",
+          "    const jsonData = pm.response.json();",
+          "    pm.expect(jsonData).to.have.property('success');",
+          "});",
+          "",
+          "// Test for successful responses",
+          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+          "    pm.test('Response is successful', function () {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData.success).to.be.true;",
+          "    });",
+          "    ",
+          "    pm.test('Response has data field', function () {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('data');",
+          "    });",
+          "}",
+          "",
+          "// Test for error responses",
+          "if (pm.response.code >= 400) {",
+          "    pm.test('Error response has message', function () {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('error');",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "description": "Base URL for the API",
+      "disabled": false
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "description": "JWT access token for authentication",
+      "disabled": false
+    },
+    {
+      "key": "companyId",
+      "value": "",
+      "description": "Company ID for company-related requests",
+      "disabled": false
+    },
+    {
+      "key": "cvId",
+      "value": "",
+      "description": "CV ID for CV-related requests",
+      "disabled": false
+    },
+    {
+      "key": "socialMediaId",
+      "value": "",
+      "description": "Social Media ID for specific operations",
+      "disabled": false
+    }
+  ]
+}

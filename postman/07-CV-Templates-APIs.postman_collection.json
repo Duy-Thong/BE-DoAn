@@ -1,0 +1,454 @@
+{
+  "info": {
+    "name": "07 - CV Templates APIs",
+    "_postman_id": "cv-templates-apis-collection-2025",
+    "description": "CV Templates Management APIs - Admin Only\n\nEnd users don't interact with templates directly. They use CV download API which handles template rendering on the server side.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Admin - Template Management",
+      "item": [
+        {
+          "name": "Create Template (with HTML & Preview)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Template created successfully\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.have.property('id');",
+                  "    pm.expect(response.data).to.have.property('htmlUrl');",
+                  "});",
+                  "",
+                  "// Save template ID for other requests",
+                  "if (response.success && response.data) {",
+                  "    pm.environment.set(\"templateId\", response.data.id);",
+                  "    console.log(\"✓ Saved templateId:\", response.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Modern Professional Template",
+                  "type": "text",
+                  "description": "Template name (required)"
+                },
+                {
+                  "key": "slug",
+                  "value": "modern-professional",
+                  "type": "text",
+                  "description": "URL-friendly slug (required)"
+                },
+                {
+                  "key": "description",
+                  "value": "A clean and modern template perfect for tech professionals",
+                  "type": "text",
+                  "description": "Template description (optional)"
+                },
+                {
+                  "key": "category",
+                  "value": "professional",
+                  "type": "text",
+                  "description": "Category: professional, creative, academic (required)"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "type": "text",
+                  "description": "Active status (default: false)"
+                },
+                {
+                  "key": "isDefault",
+                  "value": "false",
+                  "type": "text",
+                  "description": "Set as default template (default: false)"
+                },
+                {
+                  "key": "isPremium",
+                  "value": "false",
+                  "type": "text",
+                  "description": "Premium template (default: false)"
+                },
+                {
+                  "key": "version",
+                  "value": "1.0.0",
+                  "type": "text",
+                  "description": "Template version (optional)"
+                },
+                {
+                  "key": "author",
+                  "value": "Admin",
+                  "type": "text",
+                  "description": "Template author (optional)"
+                },
+                {
+                  "key": "tags",
+                  "value": "[\"modern\", \"professional\", \"tech\"]",
+                  "type": "text",
+                  "description": "Tags as JSON array (optional)"
+                },
+                {
+                  "key": "html",
+                  "type": "file",
+                  "src": [],
+                  "description": "HTML template file (REQUIRED)"
+                },
+                {
+                  "key": "preview",
+                  "type": "file",
+                  "src": [],
+                  "description": "Preview image - JPG, PNG, WebP (optional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cv-templates/admin/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["cv-templates", "admin", "templates"]
+            },
+            "description": "Create a new CV template with HTML file and preview image (Admin only).\n\nRequired files:\n- html: HTML template file with variables like {{fullName}}, {{email}}, etc.\n\nOptional files:\n- preview: Preview image (JPG, PNG, WebP)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Templates (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has templates array\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    pm.expect(response).to.have.property('data');",
+                  "});",
+                  "",
+                  "// Save first template ID if available",
+                  "if (response.success && response.data && response.data.length > 0) {",
+                  "    const firstTemplate = response.data[0];",
+                  "    pm.environment.set(\"templateId\", firstTemplate.id);",
+                  "    console.log(\"✓ Saved templateId:\", firstTemplate.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cv-templates/admin/templates?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["cv-templates", "admin", "templates"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "category",
+                  "value": "professional",
+                  "description": "Filter by category",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "description": "Filter by active status",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "modern",
+                  "description": "Search by name or description",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all templates with pagination and filters (Admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Template By ID (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has template data\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.have.property('id');",
+                  "    pm.expect(response.data).to.have.property('name');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cv-templates/admin/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cv-templates", "admin", "templates", "{{templateId}}"]
+            },
+            "description": "Get template details by ID (Admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Template (Metadata, HTML, or Preview)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has updated template\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    pm.expect(response).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Updated Modern Professional Template",
+                  "type": "text",
+                  "description": "Template name (optional)"
+                },
+                {
+                  "key": "description",
+                  "value": "Updated description with more details",
+                  "type": "text",
+                  "description": "Template description (optional)"
+                },
+                {
+                  "key": "version",
+                  "value": "1.1.0",
+                  "type": "text",
+                  "description": "Template version (optional)"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "type": "text",
+                  "description": "Active status (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "html",
+                  "type": "file",
+                  "src": [],
+                  "description": "Updated HTML file (optional)"
+                },
+                {
+                  "key": "preview",
+                  "type": "file",
+                  "src": [],
+                  "description": "Updated preview image (optional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cv-templates/admin/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cv-templates", "admin", "templates", "{{templateId}}"]
+            },
+            "description": "Update template - can update metadata, HTML file, preview image, or all at once (Admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cv-templates/admin/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cv-templates", "admin", "templates", "{{templateId}}"]
+            },
+            "description": "Delete a template (Admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Template Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has statistics\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    pm.expect(response).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cv-templates/admin/templates/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["cv-templates", "admin", "templates", "stats"]
+            },
+            "description": "Get template usage statistics (Admin only)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  }
+}

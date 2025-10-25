@@ -1,0 +1,564 @@
+{
+  "info": {
+    "name": "04 - Jobs APIs",
+    "_postman_id": "jobs-apis-collection-2025",
+    "description": "Job Management APIs with automatic data capture and test scripts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Public Job APIs",
+      "item": [
+        {
+          "name": "List Jobs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response structure",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has data array\", function () {",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "// Test pagination",
+                  "pm.test(\"Response has pagination info\", function () {",
+                  "    pm.expect(response).to.have.property('meta');",
+                  "    pm.expect(response.meta).to.have.property('total');",
+                  "    pm.expect(response.meta).to.have.property('page');",
+                  "    pm.expect(response.meta).to.have.property('limit');",
+                  "});",
+                  "",
+                  "// Save first job ID for testing",
+                  "if (response.success && response.data && response.data.length > 0) {",
+                  "    const firstJob = response.data[0];",
+                  "    pm.environment.set(\"jobId\", firstJob.id);",
+                  "    console.log(\"✓ Saved jobId:\", firstJob.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Search by job title"
+                },
+                {
+                  "key": "location",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by location"
+                },
+                {
+                  "key": "employmentType",
+                  "value": "",
+                  "disabled": true,
+                  "description": "FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP"
+                },
+                {
+                  "key": "experienceLevel",
+                  "value": "",
+                  "disabled": true,
+                  "description": "ENTRY, JUNIOR, MIDDLE, SENIOR, LEAD"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "OPEN, CLOSED, DRAFT"
+                }
+              ]
+            },
+            "description": "Get list of jobs with pagination and filters. Public access."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has job data\", function () {",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.be.an('object');",
+                  "    pm.expect(response.data).to.have.property('id');",
+                  "    pm.expect(response.data).to.have.property('title');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}"]
+            },
+            "description": "Get job details by ID. Public access."
+          },
+          "response": []
+        },
+        {
+          "name": "Track Job View",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "// Test response",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}/view",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}", "view"]
+            },
+            "description": "Track job view count. Public access."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Job CRUD (Recruiter/Admin)",
+      "item": [
+        {
+          "name": "Create Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "// Test response",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has created job data\", function () {",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.have.property('id');",
+                  "});",
+                  "",
+                  "// Save created job ID",
+                  "if (response.success && response.data) {",
+                  "    pm.environment.set(\"jobId\", response.data.id);",
+                  "    console.log(\"✓ Saved jobId:\", response.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"title\": \"Senior Full-Stack Developer\",\n  \"description\": \"We are looking for an experienced Full-Stack Developer to join our team. You will work on exciting projects using modern technologies and collaborate with a talented team.\",\n  \"location\": \"Ho Chi Minh City\",\n  \"salaryRange\": \"2000-3000 USD\",\n  \"employmentType\": \"FULL_TIME\",\n  \"experienceLevel\": \"SENIOR\",\n  \"numberOfPositions\": 2,\n  \"expiresAt\": \"2025-12-31T23:59:59.000Z\",\n  \"requirements\": [\n    {\n      \"title\": \"Technical Skills\",\n      \"description\": \"5+ years of experience in full-stack web development. Strong knowledge of React, Node.js, and PostgreSQL.\"\n    },\n    {\n      \"title\": \"Education\",\n      \"description\": \"Bachelor's degree in Computer Science or related field.\"\n    },\n    {\n      \"title\": \"Soft Skills\",\n      \"description\": \"Excellent communication and teamwork skills. Ability to work in an agile environment.\"\n    }\n  ],\n  \"benefits\": [\n    {\n      \"title\": \"Compensation\",\n      \"description\": \"Competitive salary with performance bonuses.\"\n    },\n    {\n      \"title\": \"Health & Wellness\",\n      \"description\": \"Comprehensive health insurance, annual health check-ups.\"\n    },\n    {\n      \"title\": \"Work-Life Balance\",\n      \"description\": \"Flexible working hours, remote work options, 15 days annual leave.\"\n    },\n    {\n      \"title\": \"Professional Development\",\n      \"description\": \"Training budget, conference attendance, career advancement opportunities.\"\n    }\n  ],\n  \"skills\": [\n    {\n      \"skillName\": \"React\",\n      \"isRequired\": true\n    },\n    {\n      \"skillName\": \"Node.js\",\n      \"isRequired\": true\n    },\n    {\n      \"skillName\": \"PostgreSQL\",\n      \"isRequired\": true\n    },\n    {\n      \"skillName\": \"TypeScript\",\n      \"isRequired\": false\n    },\n    {\n      \"skillName\": \"Docker\",\n      \"isRequired\": false\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"]
+            },
+            "description": "Create new job posting. Recruiter or Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has updated data\", function () {",
+                  "    pm.expect(response).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lead Full-Stack Developer\",\n  \"description\": \"Updated job description with more details.\",\n  \"salaryRange\": \"2500-3500 USD\",\n  \"numberOfPositions\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}"]
+            },
+            "description": "Update job information. Recruiter or Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}"]
+            },
+            "description": "Delete job. Recruiter or Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Applications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has applications array\", function () {",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "// Save first application ID",
+                  "if (response.success && response.data && response.data.length > 0) {",
+                  "    const firstApp = response.data[0];",
+                  "    pm.environment.set(\"applicationId\", firstApp.id);",
+                  "    console.log(\"✓ Saved applicationId:\", firstApp.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}/applications",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}", "applications"]
+            },
+            "description": "Get all applications for a specific job. Recruiter or Admin only."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Company Job Management",
+      "item": [
+        {
+          "name": "Get Company Jobs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has jobs array\", function () {",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/company/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "company", "{{companyId}}"]
+            },
+            "description": "Get all jobs posted by a specific company."
+          },
+          "response": []
+        },
+        {
+          "name": "Repost Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Parse response",
+                  "const response = pm.response.json();",
+                  "",
+                  "// Test status code",
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "// Test response",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has reposted job data\", function () {",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    pm.expect(response.data).to.have.property('id');",
+                  "});",
+                  "",
+                  "// Save reposted job ID",
+                  "if (response.success && response.data) {",
+                  "    pm.environment.set(\"repostedJobId\", response.data.id);",
+                  "    console.log(\"✓ Saved repostedJobId:\", response.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobId\": \"{{jobId}}\",\n  \"expiresAt\": \"2026-12-31T23:59:59.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs/company/{{companyId}}/repost",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "company", "{{companyId}}", "repost"]
+            },
+            "description": "Repost an existing job with new expiration date."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  }
+}

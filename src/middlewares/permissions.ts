@@ -512,7 +512,7 @@ export function requirePublicAccess() {
 /**
  * Check if user can access authenticated resources
  */
-export function AuthMiddleware.authenticateenticatedAccess() {
+export function authenticatedAccess() {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AuthorizationError('Cần đăng nhập để truy cập'));

@@ -3,9 +3,10 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import Handlebars from 'handlebars';
 import { CVResponse } from '../../modules/cvs/dto.js';
+import { CVTemplateService } from '../../modules/cv-templates/service.js';
 
 export interface PDFGenerationOptions {
-  template?: 'default' | 'modern' | 'harvard';
+  template?: string; // Template slug or ID (from database) or legacy name (default, modern, harvard)
   format?: 'A4' | 'Letter';
   margin?: {
     top?: string;
@@ -46,9 +47,11 @@ export interface CVData {
 export class PDFGeneratorService {
   private templatesPath: string;
   private browser: any = null;
+  private cvTemplateService: CVTemplateService;
 
   constructor() {
     this.templatesPath = join(process.cwd(), 'src', 'templates', 'cv');
+    this.cvTemplateService = new CVTemplateService();
     this.registerHandlebarsHelpers();
   }
 
@@ -251,11 +254,33 @@ export class PDFGeneratorService {
   }
 
   /**
+   * Load template từ database
+   */
+  private async loadTemplateFromDatabase(templateIdOrSlug: string): Promise<string> {
+    try {
+      const template = await this.cvTemplateService.getTemplateContent(templateIdOrSlug);
+      return template.htmlContent;
+    } catch (error) {
+      console.error('Error loading template from database:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Render HTML từ template và data
    */
   private renderHTML(templateName: string, data: CVData): string {
     const templateSource = this.loadTemplate(templateName);
     const template = Handlebars.compile(templateSource);
+    return template(data);
+  }
+
+  /**
+   * Render HTML từ database template
+   */
+  private async renderHTMLFromDatabase(templateIdOrSlug: string, data: CVData): Promise<string> {
+    const htmlContent = await this.loadTemplateFromDatabase(templateIdOrSlug);
+    const template = Handlebars.compile(htmlContent);
     return template(data);
   }
 
@@ -311,12 +336,29 @@ export class PDFGeneratorService {
     try {
       const templateName = options.template || 'default';
       const preparedData = this.prepareCVData(cvData);
-      const html = this.renderHTML(templateName, preparedData);
+      
+      let html: string;
+      
+      // Kiểm tra nếu template là ID hoặc slug (database template)
+      if (this.isTemplateIdOrSlug(templateName)) {
+        html = await this.renderHTMLFromDatabase(templateName, preparedData);
+      } else {
+        // Fallback to file system template
+        html = this.renderHTML(templateName, preparedData);
+      }
       
       return await this.generatePDFFromHTML(html, options);
     } catch (error) {
       throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Kiểm tra xem template có phải là ID hoặc slug không
+   */
+  private isTemplateIdOrSlug(template: string): boolean {
+    // Kiểm tra nếu là CUID (24 ký tự) hoặc UUID (36 ký tự) hoặc slug (chứa dấu gạch ngang)
+    return template.length > 10 || template.includes('-');
   }
 
   /**
@@ -334,17 +376,65 @@ export class PDFGeneratorService {
   }
 
   /**
-   * Lấy danh sách templates có sẵn
+   * Lấy danh sách templates có sẵn từ database
    */
-  public getAvailableTemplates(): string[] {
-    return ['default', 'modern', 'harvard'];
+  public async getAvailableTemplates(): Promise<Array<{
+    id: string;
+    name: string;
+    slug: string;
+    category: string;
+    isDefault: boolean;
+    isPremium: boolean;
+    previewUrl?: string;
+  }>> {
+    try {
+      const result = await this.cvTemplateService.getTemplates({
+        page: 1,
+        limit: 100,
+        isActive: true,
+        sortBy: 'name',
+        sortOrder: 'asc'
+      });
+      
+      return result.templates.map(template => ({
+        id: template.id,
+        name: template.name,
+        slug: template.slug,
+        category: template.category,
+        isDefault: template.isDefault,
+        isPremium: template.isPremium,
+        previewUrl: template.previewUrl || undefined,
+      }));
+    } catch (error) {
+      console.error('Error getting templates from database:', error);
+      // Fallback to file system templates
+      return [
+        { id: 'default', name: 'Default', slug: 'default', category: 'professional', isDefault: true, isPremium: false },
+        { id: 'modern', name: 'Modern', slug: 'modern', category: 'modern', isDefault: false, isPremium: false },
+        { id: 'harvard', name: 'Harvard', slug: 'harvard', category: 'academic', isDefault: false, isPremium: false },
+      ];
+    }
   }
 
   /**
    * Kiểm tra template có tồn tại không
+   * Check filesystem templates (default, modern, harvard) và database templates
    */
-  public templateExists(templateName: string): boolean {
-    return this.getAvailableTemplates().includes(templateName);
+  public async templateExists(templateName: string): Promise<boolean> {
+    // Check filesystem templates (legacy)
+    const filesystemTemplates = ['default', 'modern', 'harvard'];
+    if (filesystemTemplates.includes(templateName)) {
+      return true;
+    }
+    
+    // Check database templates (by ID or slug)
+    try {
+      const dbTemplates = await this.getAvailableTemplates();
+      return dbTemplates.some(t => t.id === templateName || t.slug === templateName);
+    } catch (error) {
+      console.error('Error checking template existence:', error);
+      return false;
+    }
   }
 
   /**

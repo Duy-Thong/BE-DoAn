@@ -14,6 +14,7 @@ import { uploadsRouter } from '../modules/uploads/routes.js';
 // New modules
 import cvsRouter from '../modules/cvs/routes.js';
 import adminRouter from '../modules/admin/routes.js';
+import cvTemplatesRouter from '../modules/cv-templates/routes.js';
 // Additional modules
 import { notificationsRouter } from '../modules/notifications/routes.js';
 import aiRouter from '../modules/ai/routes.js';
@@ -43,6 +44,7 @@ export function createExpressApp() {
   // New modules
   app.use('/api/cvs', cvsRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/cv-templates', cvTemplatesRouter);
   
   // Additional modules
   app.use('/api/notifications', notificationsRouter);
