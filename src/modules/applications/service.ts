@@ -71,11 +71,15 @@ export class ApplicationsService {
       throw new ValidationError('CV không tồn tại hoặc không thuộc về bạn');
     }
 
-    // Kiểm tra đã apply job này chưa
+    // Kiểm tra đã apply job này chưa (chỉ chặn nếu đang PENDING hoặc ACCEPTED)
     const existingApplication = await this.repository.findByCvAndJob(input.cvId, input.jobId);
 
     if (existingApplication) {
-      throw new ValidationError('Bạn đã ứng tuyển công việc này rồi');
+      if (existingApplication.status === 'PENDING') {
+        throw new ValidationError('Bạn đang có đơn ứng tuyển chờ xử lý cho công việc này');
+      } else if (existingApplication.status === 'ACCEPTED') {
+        throw new ValidationError('Bạn đã được chấp nhận cho công việc này rồi');
+      }
     }
 
     // Transaction: Tạo application và tăng applicationCount

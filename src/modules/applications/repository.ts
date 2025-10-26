@@ -173,12 +173,15 @@ export class ApplicationRepository {
 
   /**
    * Find application by CV and Job (for duplicate check)
+   * Chỉ kiểm tra các đơn đang PENDING hoặc ACCEPTED
+   * Cho phép ứng tuyển lại nếu đã bị REJECTED
    */
   async findByCvAndJob(cvId: string, jobId: string, excludeId?: string) {
     return prisma.application.findFirst({
       where: {
         cvId,
         jobId,
+        status: { in: ['PENDING', 'ACCEPTED'] }, // Chỉ chặn nếu đang pending hoặc đã accepted
         ...(excludeId && { id: { not: excludeId } })
       }
     });

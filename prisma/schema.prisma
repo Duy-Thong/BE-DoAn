@@ -185,7 +185,8 @@ model Application {
   cv              CV       @relation(fields: [cvId], references: [id])
   job             Job      @relation(fields: [jobId], references: [id])
   
-  @@unique([cvId, jobId]) // Một CV chỉ có thể apply cho một Job một lần
+  // Cho phép ứng tuyển lại nếu đã bị từ chối
+  @@index([cvId, jobId, status])
   @@index([jobId, status])
   @@index([createdAt])
 }
