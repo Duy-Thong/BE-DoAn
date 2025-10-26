@@ -39,7 +39,11 @@ jobsRouter.post('/', createJob);
 jobsRouter.put('/:id', updateJob);
 jobsRouter.delete('/:id', deleteJob);
 
-// Job nested submodules routes (phải đặt trước các routes khác để tránh conflict)
+// Company job management (phải đặt trước nested routes để tránh conflict)
+jobsRouter.get('/company/:companyId', getCompanyJobs);
+jobsRouter.post('/company/:companyId/repost', repostJob);
+
+// Job nested submodules routes
 import requirementsRoutes from './requirements/routes.js';
 import benefitsRoutes from './benefits/routes.js';
 import skillsRoutes from './skills/routes.js';
@@ -49,10 +53,6 @@ jobsRouter.use('/:jobId/requirements', requirementsRoutes);
 jobsRouter.use('/:jobId/benefits', benefitsRoutes);
 jobsRouter.use('/:jobId/skills', skillsRoutes);
 jobsRouter.use('/:jobId/views', viewsRoutes);
-
-// Company job management
-jobsRouter.get('/company/:companyId', getCompanyJobs);
-jobsRouter.post('/company/:companyId/repost', repostJob);
 
 // Job applications (for recruiters) - đặt sau nested routes
 jobsRouter.get('/:id/applications', async (req, res) => {

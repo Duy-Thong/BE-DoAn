@@ -115,7 +115,7 @@ export const repostJob = async (req: Request, res: Response) => {
   }
 };
 
-// Lấy danh sách jobs của công ty
+// Lấy danh sách jobs của công ty (cho HR - tất cả jobs)
 export const getCompanyJobs = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -125,11 +125,29 @@ export const getCompanyJobs = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const jobs = await service.getCompanyJobs(companyId, userId);
+    // Parse query params
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
+    
+    // Parse isActive filter (nếu có)
+    let isActive: boolean | undefined;
+    if (req.query.isActive !== undefined) {
+      isActive = req.query.isActive === 'true';
+    }
+
+    const result = await service.getCompanyJobs(companyId, userId, {
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      isActive
+    });
     
     res.json({
       success: true,
-      data: jobs
+      ...result
     });
   } catch (error) {
     res.status(400).json({

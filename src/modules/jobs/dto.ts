@@ -21,7 +21,9 @@ export const CreateJobDto = z.object({
 });
 export type CreateJobDto = z.infer<typeof CreateJobDto>;
 
-export const UpdateJobDto = CreateJobDto.partial().extend({
+export const UpdateJobDto = CreateJobDto.partial().omit({
+  companyId: true, // Không cho phép thay đổi companyId khi update
+}).extend({
   isActive: z.boolean().optional(),
 });
 export type UpdateJobDto = z.infer<typeof UpdateJobDto>;

@@ -134,6 +134,40 @@ export class JobsService {
     if (input.expiresAt !== undefined) data.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
     if (input.isActive !== undefined) data.isActive = input.isActive;
 
+    // Handle nested data updates (replace all strategy)
+    // Nếu có requirements trong input, xóa hết cũ và tạo mới
+    if (input.requirements !== undefined) {
+      data.requirements = {
+        deleteMany: {}, // Xóa tất cả requirements cũ
+        create: input.requirements.map(req => ({
+          title: req.title,
+          description: req.description
+        }))
+      };
+    }
+
+    // Nếu có benefits trong input, xóa hết cũ và tạo mới
+    if (input.benefits !== undefined) {
+      data.benefits = {
+        deleteMany: {}, // Xóa tất cả benefits cũ
+        create: input.benefits.map(benefit => ({
+          title: benefit.title,
+          description: benefit.description
+        }))
+      };
+    }
+
+    // Nếu có skills trong input, xóa hết cũ và tạo mới
+    if (input.skills !== undefined) {
+      data.jobSkills = {
+        deleteMany: {}, // Xóa tất cả skills cũ
+        create: input.skills.map(skill => ({
+          skillName: skill.skillName,
+          isRequired: skill.isRequired
+        }))
+      };
+    }
+
     return prisma.job.update({ 
       where: { id }, 
       data,
@@ -143,6 +177,14 @@ export class JobsService {
             name: true,
             logoUrl: true,
             isVerified: true
+          }
+        },
+        requirements: true,
+        benefits: true,
+        jobSkills: true,
+        _count: {
+          select: {
+            applications: true
           }
         }
       }
@@ -227,17 +269,55 @@ export class JobsService {
     });
   }
 
-  // Lấy danh sách jobs của công ty
-  async getCompanyJobs(companyId: string, userId: string) {
+  // Lấy danh sách jobs của công ty (cho HR - trả về tất cả jobs)
+  async getCompanyJobs(
+    companyId: string, 
+    userId: string,
+    options?: {
+      page?: number;
+      limit?: number;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+      isActive?: boolean;
+    }
+  ) {
     // Kiểm tra quyền truy cập
     const hasPermission = await this.checkJobPermission(companyId, userId);
     if (!hasPermission) {
       throw new Error('Insufficient permissions');
     }
 
-    return prisma.job.findMany({
-      where: { companyId },
+    const page = options?.page || 1;
+    const limit = options?.limit || 10;
+    const skip = (page - 1) * limit;
+    const sortBy = options?.sortBy || 'createdAt';
+    const sortOrder = options?.sortOrder || 'desc';
+
+    // Build where clause
+    const where: any = { companyId };
+    
+    // Chỉ filter isActive nếu được chỉ định rõ ràng
+    if (options?.isActive !== undefined) {
+      where.isActive = options.isActive;
+    }
+
+    // Get total count
+    const total = await prisma.job.count({ where });
+
+    // Get jobs
+    const jobs = await prisma.job.findMany({
+      where,
       include: {
+        company: {
+          select: {
+            name: true,
+            logoUrl: true,
+            isVerified: true
+          }
+        },
+        requirements: true,
+        benefits: true,
+        jobSkills: true,
         _count: {
           select: {
             applications: true
@@ -245,9 +325,21 @@ export class JobsService {
         }
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        [sortBy]: sortOrder
+      },
+      skip,
+      take: limit
     });
+
+    return {
+      data: jobs,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   // Kiểm tra quyền truy cập job
