@@ -4,42 +4,63 @@ import { uploadAvatar, handleUploadError } from '../../middlewares/avatarUpload.
 import { CompaniesController } from './controller.js';
 import socialMediaRoutes from './social-media/routes.js';
 
+/**
+ * Companies Routes
+ * Handles company endpoints
+ * Uses CompaniesController for request handling
+ */
 export const companiesRouter = Router();
 const controller = new CompaniesController();
 
-// Public routes - Anyone can view
+// ========================================
+// PUBLIC ROUTES (anyone can view)
+// ========================================
 companiesRouter.get('/', controller.list.bind(controller));
 companiesRouter.get('/:id', controller.getById.bind(controller));
 companiesRouter.get('/:id/jobs', controller.getJobs.bind(controller));
 
-// Protected routes - Require authentication
+// ========================================
+// PROTECTED ROUTES (authentication required)
+// ========================================
 companiesRouter.use(AuthMiddleware.authenticate);
 
-// CRUD routes
+// ========================================
+// CRUD ROUTES
+// ========================================
 companiesRouter.post('/', AuthMiddleware.requireRecruiterOrAdmin, controller.create.bind(controller));
 companiesRouter.put('/:id', AuthMiddleware.requireRecruiterOrAdmin, controller.update.bind(controller));
 companiesRouter.delete('/:id', AuthMiddleware.requireAdmin, controller.remove.bind(controller));
 
-// Admin routes - Company status management
+// ========================================
+// ADMIN ROUTES (company status management)
+// ========================================
 companiesRouter.post('/:id/verify', AuthMiddleware.requireAdmin, controller.verify.bind(controller));
 companiesRouter.post('/:id/unverify', AuthMiddleware.requireAdmin, controller.unverify.bind(controller));
 companiesRouter.post('/:id/activate', AuthMiddleware.requireAdmin, controller.activate.bind(controller));
 companiesRouter.post('/:id/deactivate', AuthMiddleware.requireAdmin, controller.deactivate.bind(controller));
 
-// Member management
+// ========================================
+// MEMBER MANAGEMENT ROUTES
+// ========================================
 companiesRouter.get('/:id/users', controller.getUsers.bind(controller));
 companiesRouter.post('/:id/users', AuthMiddleware.requireRecruiterOrAdmin, controller.assignUser.bind(controller));
 companiesRouter.put('/:id/users/:userId/role', AuthMiddleware.requireRecruiterOrAdmin, controller.updateUserRole.bind(controller));
 companiesRouter.delete('/:id/users/:userId', AuthMiddleware.requireRecruiterOrAdmin, controller.removeUser.bind(controller));
 
-// Company logo/avatar management
+// ========================================
+// COMPANY LOGO MANAGEMENT
+// ========================================
 companiesRouter.post('/:id/logo', AuthMiddleware.requireRecruiterOrAdmin, uploadAvatar, handleUploadError, controller.uploadLogo.bind(controller));
 companiesRouter.delete('/:id/logo', AuthMiddleware.requireRecruiterOrAdmin, controller.deleteLogo.bind(controller));
 
-// Company banner management
+// ========================================
+// COMPANY BANNER MANAGEMENT
+// ========================================
 companiesRouter.post('/:id/banner', AuthMiddleware.requireRecruiterOrAdmin, uploadAvatar, handleUploadError, controller.uploadBanner.bind(controller));
 companiesRouter.delete('/:id/banner', AuthMiddleware.requireRecruiterOrAdmin, controller.deleteBanner.bind(controller));
 
-// Social Media nested routes
+// ========================================
+// SOCIAL MEDIA NESTED ROUTES
+// ========================================
 companiesRouter.use('/:companyId/social-media', socialMediaRoutes);
 

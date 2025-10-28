@@ -1,158 +1,116 @@
-import { Prisma, CompanyRole } from '../../generated/prisma/index.js';
-import { prisma } from '../../loaders/prisma.js';
-import { AppError, createNotFoundError, createConflictError } from '../../utils/error.js';
+import { CompanyRepository } from './repository.js';
+import { ValidationUtils } from '../../utils/validate.js';
+import { APP_CONSTANTS } from '../../utils/constants.js';
+import { createValidationError, createNotFoundError, createConflictError } from '../../utils/error.js';
+import { CompanyRole } from '../../generated/prisma/index.js';
 import type { CreateCompanyDto, UpdateCompanyDto, CompanyQueryDto } from './dto.js';
 
+/**
+ * Companies Service
+ * Handles business logic for Company operations
+ * Uses CompanyRepository for data access
+ */
 export class CompaniesService {
-  // List companies with pagination and filtering
+  private companyRepository: CompanyRepository;
+
+  constructor() {
+    this.companyRepository = new CompanyRepository();
+  }
+  // ========================================
+  // LIST COMPANIES
+  // ========================================
   async list(query: CompanyQueryDto) {
-    const { page, limit, search, industry, companySize, isVerified, isActive, isEmailVerified, sortBy, sortOrder } =
-      query;
+    return this.companyRepository.findMany(query);
+  }
 
-    const where: Prisma.CompanyWhereInput = {};
-
-    // Apply filters
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { industry: { contains: search, mode: 'insensitive' } },
-      ];
+  // ========================================
+  // CREATE COMPANY
+  // ========================================
+  async create(input: CreateCompanyDto) {
+    // Input validation
+    if (!input.name || !input.name.trim()) {
+      throw createValidationError('Tên công ty không được để trống');
+    }
+    if (input.name.length > 255) {
+      throw createValidationError('Tên công ty không được vượt quá 255 ký tự');
     }
 
-    if (industry !== undefined) where.industry = { contains: industry, mode: 'insensitive' };
-    if (companySize !== undefined) where.companySize = companySize;
-    if (isVerified !== undefined) where.isVerified = isVerified;
-    if (isActive !== undefined) where.isActive = isActive;
-    if (isEmailVerified !== undefined) where.isEmailVerified = isEmailVerified;
+    // Business validation - website if provided
+    if (input.website && input.website.trim()) {
+      if (input.website.length > 500) {
+        throw createValidationError('Website quá dài');
+      }
+    }
 
-    const skip = (page - 1) * limit;
+    // Business validation - description if provided
+    if (input.description && input.description.length > 2000) {
+      throw createValidationError('Mô tả không được vượt quá 2000 ký tự');
+    }
 
-    const [companies, total] = await Promise.all([
-      prisma.company.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        select: {
-          id: true,
-          name: true,
-          website: true,
-          description: true,
-          industry: true,
-          companySize: true,
-          foundedYear: true,
-          address: true,
-          phone: true,
-          email: true,
-          logoUrl: true,
-        bannerUrl: true,
-          isVerified: true,
-          isActive: true,
-          isEmailVerified: true,
-          createdAt: true,
-          updatedAt: true,
-          _count: {
-            select: {
-              jobs: true,
-              users: true,
-            },
-          },
-        },
-      }),
-      prisma.company.count({ where }),
-    ]);
+    // Business validation - industry if provided
+    if (input.industry && input.industry.length > 100) {
+      throw createValidationError('Ngành nghề không được vượt quá 100 ký tự');
+    }
 
-    return {
-      data: companies,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+    // Business validation - founded year if provided
+    if (input.foundedYear !== undefined && input.foundedYear !== null) {
+      if (input.foundedYear < 1800) {
+        throw createValidationError('Năm thành lập không được nhỏ hơn 1800');
+      }
+      if (input.foundedYear > new Date().getFullYear()) {
+        throw createValidationError(`Năm thành lập không được lớn hơn ${new Date().getFullYear()}`);
+      }
+    }
+
+    // Business validation - address if provided
+    if (input.address && input.address.length > 500) {
+      throw createValidationError('Địa chỉ không được vượt quá 500 ký tự');
+    }
+
+    // Business validation - phone if provided
+    if (input.phone && input.phone.trim()) {
+      if (!/^[\+]?[0-9\s\-\(\)]{10,15}$/.test(input.phone)) {
+        throw createValidationError('Số điện thoại không hợp lệ (10-15 chữ số)');
+      }
+    }
+
+    // Business validation - email if provided
+    if (input.email && input.email.trim()) {
+      if (!ValidationUtils.isValidEmail(input.email)) {
+        throw createValidationError('Email không hợp lệ');
+      }
+    }
+
+    // Business validation - logo URL if provided
+    if (input.logoUrl && input.logoUrl.length > 500) {
+      throw createValidationError('Logo URL quá dài');
+    }
+
+    // Business validation - banner URL if provided
+    if (input.bannerUrl && input.bannerUrl.length > 500) {
+      throw createValidationError('Banner URL quá dài');
+    }
+
+    // Sanitize input data
+    const sanitizedInput: CreateCompanyDto = {
+      ...input,
+      name: ValidationUtils.sanitizeString(input.name),
+      website: input.website ? ValidationUtils.sanitizeString(input.website) : null,
+      description: input.description ? ValidationUtils.sanitizeString(input.description) : null,
+      industry: input.industry ? ValidationUtils.sanitizeString(input.industry) : null,
+      address: input.address ? ValidationUtils.sanitizeString(input.address) : null,
+      phone: input.phone ? ValidationUtils.sanitizeString(input.phone) : null,
+      email: input.email ? ValidationUtils.sanitizeString(input.email) : null,
     };
+
+    return this.companyRepository.create(sanitizedInput);
   }
 
-  // Create a new company
-  async create(input: CreateCompanyDto) {
-    const company = await prisma.company.create({
-      data: {
-        name: input.name,
-        website: input.website,
-        description: input.description,
-        industry: input.industry,
-        companySize: input.companySize,
-        foundedYear: input.foundedYear,
-        address: input.address,
-        phone: input.phone,
-        email: input.email,
-        logoUrl: input.logoUrl,
-      },
-      select: {
-        id: true,
-        name: true,
-        website: true,
-        description: true,
-        industry: true,
-        companySize: true,
-        foundedYear: true,
-        address: true,
-        phone: true,
-        email: true,
-        logoUrl: true,
-        bannerUrl: true,
-        isVerified: true,
-        isActive: true,
-        isEmailVerified: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    return company;
-  }
-
-  // Get company by ID
+  // ========================================
+  // GET COMPANY BY ID
+  // ========================================
   async getById(id: string) {
-    const company = await prisma.company.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        website: true,
-        description: true,
-        industry: true,
-        companySize: true,
-        foundedYear: true,
-        address: true,
-        phone: true,
-        email: true,
-        logoUrl: true,
-        bannerUrl: true,
-        isVerified: true,
-        isActive: true,
-        isEmailVerified: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            jobs: true,
-            users: true,
-          },
-        },
-        users: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            companyRole: true,
-            joinedAt: true,
-          },
-          take: 10,
-        },
-      },
-    });
+    const company = await this.companyRepository.findById(id);
 
     if (!company) {
       throw createNotFoundError('Công ty');
@@ -161,249 +119,196 @@ export class CompaniesService {
     return company;
   }
 
-  // Update company
+  // ========================================
+  // UPDATE COMPANY
+  // ========================================
   async update(id: string, input: UpdateCompanyDto) {
     // Check if company exists
-    const existingCompany = await prisma.company.findUnique({
-      where: { id },
-    });
-
-    if (!existingCompany) {
-      throw new AppError('Công ty không tồn tại', 404);
-    }
-
-    const data: Prisma.CompanyUpdateInput = {};
-
-    if (input.name !== undefined) data.name = input.name;
-    if (input.website !== undefined) data.website = input.website;
-    if (input.description !== undefined) data.description = input.description;
-    if (input.industry !== undefined) data.industry = input.industry;
-    if (input.companySize !== undefined) data.companySize = input.companySize;
-    if (input.foundedYear !== undefined) data.foundedYear = input.foundedYear;
-    if (input.address !== undefined) data.address = input.address;
-    if (input.phone !== undefined) data.phone = input.phone;
-    if (input.email !== undefined) data.email = input.email;
-    if (input.logoUrl !== undefined) data.logoUrl = input.logoUrl;
-    if (input.bannerUrl !== undefined) data.bannerUrl = input.bannerUrl;
-    if (input.isVerified !== undefined) data.isVerified = input.isVerified;
-    if (input.isActive !== undefined) data.isActive = input.isActive;
-    if (input.isEmailVerified !== undefined) data.isEmailVerified = input.isEmailVerified;
-
-    const company = await prisma.company.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        name: true,
-        website: true,
-        description: true,
-        industry: true,
-        companySize: true,
-        foundedYear: true,
-        address: true,
-        phone: true,
-        email: true,
-        logoUrl: true,
-        bannerUrl: true,
-        isVerified: true,
-        isActive: true,
-        isEmailVerified: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    return company;
-  }
-
-  // Delete company
-  async remove(id: string) {
-    const company = await prisma.company.findUnique({
-      where: { id },
-    });
-
-    if (!company) {
+    const companyExists = await this.companyRepository.exists(id);
+    if (!companyExists) {
       throw createNotFoundError('Công ty');
     }
 
-    await prisma.company.delete({
-      where: { id },
-    });
+    // Input validation - name if provided
+    if (input.name !== undefined) {
+      if (!input.name || !input.name.trim()) {
+        throw createValidationError('Tên công ty không được để trống');
+      }
+      if (input.name.length > 255) {
+        throw createValidationError('Tên công ty không được vượt quá 255 ký tự');
+      }
+    }
 
+    // Business validation - website if provided
+    if (input.website !== undefined && input.website && input.website.trim()) {
+      if (input.website.length > 500) {
+        throw createValidationError('Website quá dài');
+      }
+    }
+
+    // Business validation - description if provided
+    if (input.description !== undefined && input.description && input.description.length > 2000) {
+      throw createValidationError('Mô tả không được vượt quá 2000 ký tự');
+    }
+
+    // Business validation - industry if provided
+    if (input.industry !== undefined && input.industry && input.industry.length > 100) {
+      throw createValidationError('Ngành nghề không được vượt quá 100 ký tự');
+    }
+
+    // Business validation - founded year if provided
+    if (input.foundedYear !== undefined && input.foundedYear !== null) {
+      if (input.foundedYear < 1800) {
+        throw createValidationError('Năm thành lập không được nhỏ hơn 1800');
+      }
+      if (input.foundedYear > new Date().getFullYear()) {
+        throw createValidationError(`Năm thành lập không được lớn hơn ${new Date().getFullYear()}`);
+      }
+    }
+
+    // Business validation - address if provided
+    if (input.address !== undefined && input.address && input.address.length > 500) {
+      throw createValidationError('Địa chỉ không được vượt quá 500 ký tự');
+    }
+
+    // Business validation - phone if provided
+    if (input.phone !== undefined && input.phone && input.phone.trim()) {
+      if (!/^[\+]?[0-9\s\-\(\)]{10,15}$/.test(input.phone)) {
+        throw createValidationError('Số điện thoại không hợp lệ (10-15 chữ số)');
+      }
+    }
+
+    // Business validation - email if provided
+    if (input.email !== undefined && input.email && input.email.trim()) {
+      if (!ValidationUtils.isValidEmail(input.email)) {
+        throw createValidationError('Email không hợp lệ');
+      }
+    }
+
+    // Business validation - logo URL if provided
+    if (input.logoUrl !== undefined && input.logoUrl && input.logoUrl.length > 500) {
+      throw createValidationError('Logo URL quá dài');
+    }
+
+    // Business validation - banner URL if provided
+    if (input.bannerUrl !== undefined && input.bannerUrl && input.bannerUrl.length > 500) {
+      throw createValidationError('Banner URL quá dài');
+    }
+
+    // Sanitize input data
+    const sanitizedInput: UpdateCompanyDto = {
+      ...input,
+      name: input.name ? ValidationUtils.sanitizeString(input.name) : undefined,
+      website: input.website ? ValidationUtils.sanitizeString(input.website) : input.website,
+      description: input.description ? ValidationUtils.sanitizeString(input.description) : input.description,
+      industry: input.industry ? ValidationUtils.sanitizeString(input.industry) : input.industry,
+      address: input.address ? ValidationUtils.sanitizeString(input.address) : input.address,
+      phone: input.phone ? ValidationUtils.sanitizeString(input.phone) : input.phone,
+      email: input.email ? ValidationUtils.sanitizeString(input.email) : input.email,
+    };
+
+    return this.companyRepository.update(id, sanitizedInput);
+  }
+
+  // ========================================
+  // DELETE COMPANY
+  // ========================================
+  async remove(id: string) {
+    const companyExists = await this.companyRepository.exists(id);
+    if (!companyExists) {
+      throw createNotFoundError('Công ty');
+    }
+
+    await this.companyRepository.delete(id);
     return { message: 'Xóa công ty thành công' };
   }
 
-  // Additional methods
+  // ========================================
+  // COMPANY STATUS OPERATIONS
+  // ========================================
   async verifyCompany(id: string) {
-    return this.update(id, { isVerified: true });
+    return this.companyRepository.verify(id);
   }
 
   async unverifyCompany(id: string) {
-    return this.update(id, { isVerified: false });
+    return this.companyRepository.unverify(id);
   }
 
   async activateCompany(id: string) {
-    return this.update(id, { isActive: true });
+    return this.companyRepository.activate(id);
   }
 
   async deactivateCompany(id: string) {
-    return this.update(id, { isActive: false });
+    return this.companyRepository.deactivate(id);
   }
 
-  // Get company's jobs
+  // ========================================
+  // COMPANY JOBS
+  // ========================================
   async getCompanyJobs(id: string, page = 1, limit = 10) {
-    const company = await prisma.company.findUnique({
-      where: { id },
-    });
-
-    if (!company) {
+    const companyExists = await this.companyRepository.exists(id);
+    if (!companyExists) {
       throw createNotFoundError('Công ty');
     }
 
-    const skip = (page - 1) * limit;
-
-    const [jobs, total] = await Promise.all([
-      prisma.job.findMany({
-        where: { companyId: id },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          location: true,
-          industry: true,
-          experienceLevel: true,
-          type: true,
-          salary: true,
-          urgent: true,
-          isActive: true,
-          expiresAt: true,
-          applicationCount: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      prisma.job.count({ where: { companyId: id } }),
-    ]);
-
-    return {
-      data: jobs,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return this.companyRepository.getCompanyJobs(id, page, limit);
   }
 
-  // Get company's users/members
+  // ========================================
+  // COMPANY USERS
+  // ========================================
   async getCompanyUsers(id: string, page = 1, limit = 10) {
-    const company = await prisma.company.findUnique({
-      where: { id },
-    });
-
-    if (!company) {
+    const companyExists = await this.companyRepository.exists(id);
+    if (!companyExists) {
       throw createNotFoundError('Công ty');
     }
 
-    const skip = (page - 1) * limit;
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where: { companyId: id },
-        skip,
-        take: limit,
-        orderBy: { joinedAt: 'desc' },
-        select: {
-          id: true,
-          email: true,
-          fullName: true,
-          role: true,
-          companyRole: true,
-          joinedAt: true,
-          isActive: true,
-        },
-      }),
-      prisma.user.count({ where: { companyId: id } }),
-    ]);
-
-    return {
-      data: users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return this.companyRepository.getCompanyUsers(id, page, limit);
   }
 
-  // Assign user to company
+  // ========================================
+  // USER MANAGEMENT
+  // ========================================
   async assignUser(companyId: string, userId: string, companyRole: CompanyRole = CompanyRole.VIEWER) {
-    const company = await prisma.company.findUnique({ where: { id: companyId } });
-    if (!company) {
+    // Check if company exists
+    const companyExists = await this.companyRepository.exists(companyId);
+    if (!companyExists) {
       throw createNotFoundError('Công ty');
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
+    // Check if user exists
+    const userExists = await this.companyRepository.userExists(userId);
+    if (!userExists) {
       throw createNotFoundError('Người dùng');
     }
 
-    if (user.companyId) {
+    // Check if user already belongs to a company
+    const userBelongsToCompany = await this.companyRepository.userBelongsToCompany(userId);
+    if (userBelongsToCompany) {
       throw createConflictError('Người dùng đã thuộc về một công ty khác');
     }
 
-    return prisma.user.update({
-      where: { id: userId },
-      data: {
-        companyId,
-        companyRole,
-        joinedAt: new Date(),
-      },
-    });
+    return this.companyRepository.assignUser(companyId, userId, companyRole);
   }
 
-  // Remove user from company
   async removeUser(companyId: string, userId: string) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.companyId !== companyId) {
+    // Check if user belongs to specific company
+    const userBelongsToCompany = await this.companyRepository.userBelongsToSpecificCompany(userId, companyId);
+    if (!userBelongsToCompany) {
       throw createConflictError('Người dùng không thuộc về công ty này');
     }
 
-    return prisma.user.update({
-      where: { id: userId },
-      data: {
-        companyId: null,
-        companyRole:CompanyRole.VIEWER,
-        joinedAt: null,
-      },
-    });
+    return this.companyRepository.removeUser(companyId, userId);
   }
 
-  // Update user role in company
   async updateUserRole(companyId: string, userId: string, companyRole: CompanyRole) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.companyId !== companyId) {
+    // Check if user belongs to specific company
+    const userBelongsToCompany = await this.companyRepository.userBelongsToSpecificCompany(userId, companyId);
+    if (!userBelongsToCompany) {
       throw createConflictError('Người dùng không thuộc về công ty này');
     }
 
-    return prisma.user.update({
-      where: { id: userId },
-      data: { companyRole },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        companyRole: true,
-        joinedAt: true,
-        isActive: true,
-      },
-    });
+    return this.companyRepository.updateUserRole(companyId, userId, companyRole);
   }
 }
 
