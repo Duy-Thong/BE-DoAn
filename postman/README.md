@@ -98,6 +98,28 @@ Quản lý CV Templates - **Admin Only**:
 
 **Note:** Tất cả endpoints yêu cầu Admin role và sử dụng `multipart/form-data` cho file uploads.
 
+### 9. **08-Notifications-APIs.postman_collection.json**
+Quản lý thông báo (Notifications):
+
+- **Notification Management** (Quản lý thông báo)
+  - Create Notification (Tạo thông báo mới)
+  - Get All Notifications (Lấy danh sách thông báo với pagination và filters)
+  - Get Notification Stats (Thống kê thông báo)
+  - Get Unread Count (Số lượng thông báo chưa đọc)
+  - Get Notification by ID (Chi tiết một thông báo)
+  - Update Notification (Cập nhật thông báo)
+  - Delete Notification (Xóa thông báo)
+- **Mark as Read** (Đánh dấu đã đọc)
+  - Mark Single Notification as Read/Unread (Đánh dấu một thông báo)
+  - Bulk Mark as Read (Đánh dấu nhiều thông báo cùng lúc)
+  - Mark All as Read (Đánh dấu tất cả thông báo)
+- **Cleanup** (Dọn dẹp)
+  - Delete Old Notifications (Xóa thông báo cũ theo số ngày)
+
+**Note:** 
+- Notification types: INFO, SUCCESS, WARNING, ERROR, APPLICATION, JOB, COMPANY, CV, PROFILE, SYSTEM
+- Lưu thông tin liên quan (relatedType, relatedId) và metadata khác trong field `data` (JSON object)
+
 ---
 
 ## 🚀 Hướng dẫn sử dụng
@@ -154,6 +176,7 @@ Các biến sau được tự động lưu bởi test scripts:
 | `applicationId` | Create Application | ID đơn ứng tuyển được chọn |
 | `templateId` | Get All Templates | ID template được chọn |
 | `newTemplateId` | Create Template | ID template mới tạo |
+| `notificationId` | Get All Notifications, Create Notification | ID thông báo được chọn |
 | `testUserId` | Register, Create User | ID user test |
 
 ---

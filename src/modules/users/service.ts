@@ -1,260 +1,175 @@
-import { Prisma } from '../../generated/prisma/index.js';
-import { prisma } from '../../loaders/prisma.js';
+import { UserRepository } from './repository.js';
 import { AuthUtils } from '../../utils/auth.js';
 import { ValidationUtils } from '../../utils/validate.js';
-import {
-  createValidationError,
-  createNotFoundError,
-  createConflictError,
-} from '../../utils/error.js';
+import { APP_CONSTANTS } from '../../utils/constants.js';
+import { createValidationError, createNotFoundError } from '../../utils/error.js';
 import type { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto.js';
 
 /**
- * Common select fields for user queries
- * Avoids duplication across service methods
+ * Users Service
+ * Handles business logic for User operations
+ * Uses UserRepository for data access
  */
-const USER_SELECT_FIELDS = {
-  id: true,
-  email: true,
-  fullName: true,
-  phoneNumber: true,
-  dateOfBirth: true,
-  gender: true,
-  nationality: true,
-  role: true,
-  isActive: true,
-  isLocked: true,
-  isEmailVerified: true,
-  lastLoginAt: true,
-  avatarUrl: true,
-  companyId: true,
-  companyRole: true,
-  joinedAt: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
-
 export class UsersService {
+  private userRepository: UserRepository;
+
+  constructor() {
+    this.userRepository = new UserRepository();
+  }
+
   // ========================================
   // LIST USERS
   // ========================================
   async list(query: UserQueryDto) {
-    const { page, limit, search, role, isActive, isLocked, isEmailVerified, companyId, sortBy, sortOrder } = query;
-
-    const where: Prisma.UserWhereInput = {};
-
-    // Apply search filter (only if not empty string)
-    if (search && search.trim() !== '') {
-      const sanitizedSearch = ValidationUtils.validateSearchQuery(search);
-      where.OR = [
-        { email: { contains: sanitizedSearch, mode: 'insensitive' } },
-        { fullName: { contains: sanitizedSearch, mode: 'insensitive' } },
-        { phoneNumber: { contains: sanitizedSearch, mode: 'insensitive' } },
-      ];
-    }
-
-    // Apply other filters (DTO đã xử lý empty strings thành undefined)
-    if (role !== undefined) where.role = role;
-    if (isActive !== undefined) where.isActive = isActive;
-    if (isLocked !== undefined) where.isLocked = isLocked;
-    if (isEmailVerified !== undefined) where.isEmailVerified = isEmailVerified;
-    if (companyId !== undefined) where.companyId = companyId;
-
-    const skip = (page - 1) * limit;
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        select: USER_SELECT_FIELDS,
-      }),
-      prisma.user.count({ where }),
-    ]);
-
-    return {
-      data: users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return this.userRepository.findMany(query);
   }
 
   // ========================================
   // CREATE USER
   // ========================================
   async create(input: CreateUserDto) {
-    // Email already normalized by Zod transform
-    const email = input.email;
+    // Input validation
+    if (!input.email || !input.email.trim()) {
+      throw createValidationError('Email không được để trống');
+    }
+    if (!ValidationUtils.isValidEmail(input.email)) {
+      throw createValidationError('Email không hợp lệ');
+    }
+    if (!input.password || input.password.length < APP_CONSTANTS.PASSWORD_MIN_LENGTH) {
+      throw createValidationError(`Mật khẩu phải có ít nhất ${APP_CONSTANTS.PASSWORD_MIN_LENGTH} ký tự`);
+    }
+    if (input.password.length > APP_CONSTANTS.PASSWORD_MAX_LENGTH) {
+      throw createValidationError(`Mật khẩu không được vượt quá ${APP_CONSTANTS.PASSWORD_MAX_LENGTH} ký tự`);
+    }
+    if (!input.fullName || !input.fullName.trim()) {
+      throw createValidationError('Họ tên không được để trống');
+    }
+    if (input.fullName.length > 255) {
+      throw createValidationError('Họ tên quá dài');
+    }
 
-    // Validate password strength
+    // Business validation - password strength
     const passwordValidation = ValidationUtils.isValidPassword(input.password);
     if (!passwordValidation.isValid) {
       throw createValidationError(passwordValidation.errors);
     }
 
-    // Validate phone number if provided
+    // Business validation - phone number if provided
     if (input.phoneNumber && input.phoneNumber.trim()) {
+      if (input.phoneNumber.length > 20) {
+        throw createValidationError('Số điện thoại quá dài');
+      }
       if (!ValidationUtils.isValidVietnamesePhone(input.phoneNumber)) {
         throw createValidationError('Số điện thoại không hợp lệ');
       }
     }
 
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw createConflictError('Email đã tồn tại');
+    // Business validation - nationality if provided
+    if (input.nationality && input.nationality.length > 100) {
+      throw createValidationError('Quốc tịch quá dài');
     }
 
-    // Hash password using AuthUtils (12 rounds)
-    const passwordHash = await AuthUtils.hashPassword(input.password);
+    // Business validation - avatar URL if provided
+    if (input.avatarUrl && input.avatarUrl.length > 500) {
+      throw createValidationError('URL avatar quá dài');
+    }
 
-    // Create user with sanitized inputs
-    const user = await prisma.user.create({
-      data: {
-        email,
-        fullName: ValidationUtils.sanitizeString(input.fullName),
-        passwordHash,
-        phoneNumber: input.phoneNumber ? ValidationUtils.sanitizeString(input.phoneNumber) : null,
-        dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
-        gender: input.gender,
-        nationality: input.nationality ? ValidationUtils.sanitizeString(input.nationality) : null,
-        role: input.role,
-        avatarUrl: input.avatarUrl,
-        companyId: input.companyId,
-      },
-      select: USER_SELECT_FIELDS,
-    });
+    // Sanitize input data
+    const sanitizedInput: CreateUserDto = {
+      ...input,
+      fullName: ValidationUtils.sanitizeString(input.fullName),
+      phoneNumber: input.phoneNumber ? ValidationUtils.sanitizeString(input.phoneNumber) : null,
+      nationality: input.nationality ? ValidationUtils.sanitizeString(input.nationality) : null,
+    };
 
-    return user;
+    return this.userRepository.create(sanitizedInput);
   }
 
   // ========================================
   // GET USER BY ID
   // ========================================
   async getById(id: string) {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        ...USER_SELECT_FIELDS,
-        company: {
-          select: {
-            id: true,
-            name: true,
-            logoUrl: true,
-          },
-        },
-      },
-    });
-
-    if (!user) {
-      throw createNotFoundError('Người dùng');
-    }
-
-    return user;
+    return this.userRepository.findById(id);
   }
 
   // ========================================
   // UPDATE USER
   // ========================================
   async update(id: string, input: UpdateUserDto) {
-    // Use transaction to prevent race conditions
-    return await prisma.$transaction(async (tx) => {
-      // Check if user exists
-      const existingUser = await tx.user.findUnique({
-        where: { id },
-      });
-
-      if (!existingUser) {
-        throw createNotFoundError('Người dùng');
+    // Input validation - email if provided
+    if (input.email !== undefined) {
+      if (!input.email || !input.email.trim()) {
+        throw createValidationError('Email không được để trống');
       }
-
-      // Check email uniqueness if email is being updated
-      if (input.email && input.email !== existingUser.email) {
-        const emailExists = await tx.user.findUnique({
-          where: { email: input.email },
-        });
-
-        if (emailExists) {
-          throw createConflictError('Email đã tồn tại');
-        }
+      if (!ValidationUtils.isValidEmail(input.email)) {
+        throw createValidationError('Email không hợp lệ');
       }
+    }
 
-      // Validate password if being updated
-      if (input.password) {
-        const passwordValidation = ValidationUtils.isValidPassword(input.password);
-        if (!passwordValidation.isValid) {
-          throw createValidationError(passwordValidation.errors);
-        }
+    // Input validation - password if provided
+    if (input.password !== undefined) {
+      if (!input.password || input.password.length < APP_CONSTANTS.PASSWORD_MIN_LENGTH) {
+        throw createValidationError(`Mật khẩu phải có ít nhất ${APP_CONSTANTS.PASSWORD_MIN_LENGTH} ký tự`);
       }
+      if (input.password.length > APP_CONSTANTS.PASSWORD_MAX_LENGTH) {
+        throw createValidationError(`Mật khẩu không được vượt quá ${APP_CONSTANTS.PASSWORD_MAX_LENGTH} ký tự`);
+      }
+    }
 
-      // Validate phone number if being updated
-      if (input.phoneNumber && input.phoneNumber.trim()) {
-        if (!ValidationUtils.isValidVietnamesePhone(input.phoneNumber)) {
-          throw createValidationError('Số điện thoại không hợp lệ');
-        }
+    // Input validation - fullName if provided
+    if (input.fullName !== undefined) {
+      if (!input.fullName || !input.fullName.trim()) {
+        throw createValidationError('Họ tên không được để trống');
       }
+      if (input.fullName.length > 255) {
+        throw createValidationError('Họ tên quá dài');
+      }
+    }
 
-      // Build update data with sanitization
-      const data: Prisma.UserUpdateInput = {};
+    // Business validation - password strength if being updated
+    if (input.password) {
+      const passwordValidation = ValidationUtils.isValidPassword(input.password);
+      if (!passwordValidation.isValid) {
+        throw createValidationError(passwordValidation.errors);
+      }
+    }
 
-      if (input.email !== undefined) data.email = input.email; // Already normalized by Zod
-      if (input.fullName !== undefined) data.fullName = ValidationUtils.sanitizeString(input.fullName);
-      if (input.phoneNumber !== undefined) {
-        data.phoneNumber = input.phoneNumber ? ValidationUtils.sanitizeString(input.phoneNumber) : null;
+    // Business validation - phone number if being updated
+    if (input.phoneNumber !== undefined && input.phoneNumber && input.phoneNumber.trim()) {
+      if (input.phoneNumber.length > 20) {
+        throw createValidationError('Số điện thoại quá dài');
       }
-      if (input.dateOfBirth !== undefined) {
-        data.dateOfBirth = input.dateOfBirth ? new Date(input.dateOfBirth) : null;
+      if (!ValidationUtils.isValidVietnamesePhone(input.phoneNumber)) {
+        throw createValidationError('Số điện thoại không hợp lệ');
       }
-      if (input.gender !== undefined) data.gender = input.gender;
-      if (input.nationality !== undefined) {
-        data.nationality = input.nationality ? ValidationUtils.sanitizeString(input.nationality) : null;
-      }
-      if (input.avatarUrl !== undefined) data.avatarUrl = input.avatarUrl;
-      if (input.password) {
-        data.passwordHash = await AuthUtils.hashPassword(input.password);
-      }
-      if (input.role !== undefined) data.role = input.role;
-      if (input.isActive !== undefined) data.isActive = input.isActive;
-      if (input.isLocked !== undefined) data.isLocked = input.isLocked;
-      if (input.isEmailVerified !== undefined) data.isEmailVerified = input.isEmailVerified;
-      if (input.companyId !== undefined) data.companyId = input.companyId;
+    }
 
-      // Update user
-      const user = await tx.user.update({
-        where: { id },
-        data,
-        select: USER_SELECT_FIELDS,
-      });
+    // Business validation - nationality if provided
+    if (input.nationality !== undefined && input.nationality && input.nationality.length > 100) {
+      throw createValidationError('Quốc tịch quá dài');
+    }
 
-      return user;
-    });
+    // Business validation - avatar URL if provided
+    if (input.avatarUrl !== undefined && input.avatarUrl && input.avatarUrl.length > 500) {
+      throw createValidationError('URL avatar quá dài');
+    }
+
+    // Sanitize input data
+    const sanitizedInput: UpdateUserDto = {
+      ...input,
+      fullName: input.fullName ? ValidationUtils.sanitizeString(input.fullName) : undefined,
+      phoneNumber: input.phoneNumber ? ValidationUtils.sanitizeString(input.phoneNumber) : input.phoneNumber,
+      nationality: input.nationality ? ValidationUtils.sanitizeString(input.nationality) : input.nationality,
+    };
+
+    return this.userRepository.update(id, sanitizedInput);
   }
 
   // ========================================
   // DELETE USER
   // ========================================
   async remove(id: string) {
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw createNotFoundError('Người dùng');
-    }
-
-    await prisma.user.delete({
-      where: { id },
-    });
-
-    return { message: 'Xóa người dùng thành công' };
+    return this.userRepository.delete(id);
   }
 
   // ========================================
@@ -262,42 +177,30 @@ export class UsersService {
   // ========================================
 
   async updateLastLogin(id: string) {
-    return prisma.user.update({
-      where: { id },
-      data: { lastLoginAt: new Date() },
-    });
+    return this.userRepository.updateLastLogin(id);
   }
 
   async findByEmail(email: string) {
-    const normalizedEmail = ValidationUtils.normalizeEmail(email);
-    return prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    return this.userRepository.findByEmail(email);
   }
 
   async lockUser(id: string) {
-    return this.update(id, { isLocked: true });
+    return this.userRepository.lockUser(id);
   }
 
   async unlockUser(id: string) {
-    return this.update(id, { isLocked: false });
+    return this.userRepository.unlockUser(id);
   }
 
   async verifyEmail(id: string) {
-    return this.update(id, { isEmailVerified: true });
+    return this.userRepository.verifyEmail(id);
   }
 
   // ========================================
   // CHANGE PASSWORD
   // ========================================
   async changePassword(id: string, currentPassword: string, newPassword: string) {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        passwordHash: true,
-      },
-    });
+    const user = await this.userRepository.findByIdWithPassword(id);
 
     if (!user) {
       throw createNotFoundError('Người dùng');
@@ -317,10 +220,7 @@ export class UsersService {
 
     // Hash and update new password
     const newPasswordHash = await AuthUtils.hashPassword(newPassword);
-    await prisma.user.update({
-      where: { id },
-      data: { passwordHash: newPasswordHash },
-    });
+    await this.userRepository.updatePassword(id, newPasswordHash);
 
     return { message: 'Đổi mật khẩu thành công' };
   }

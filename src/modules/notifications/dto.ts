@@ -1,17 +1,24 @@
 import { z } from 'zod';
-import { NOTIFICATION_TYPES, NOTIFICATION_RELATED_TYPES } from '../../utils/constants.js';
+
+// Notification types enum - must match Prisma schema
+export const NotificationTypeEnum = z.enum([
+  'JOB_APPLICATION',
+  'JOB_APPROVED',
+  'JOB_REJECTED',
+  'INTERVIEW_SCHEDULED',
+  'APPLICATION_STATUS_CHANGED',
+  'NEW_JOB_MATCH',
+  'COMPANY_VERIFIED',
+  'SYSTEM_ANNOUNCEMENT',
+]);
 
 export const createNotificationDto = z.object({
   title: z.string().min(1, 'Tiêu đề không được để trống'),
   message: z.string().min(1, 'Nội dung không được để trống'),
-  type: z.enum(NOTIFICATION_TYPES as [string, ...string[]], {
-    errorMap: () => ({ message: 'Loại thông báo không hợp lệ' }),
-  }),
-  relatedType: z.enum(NOTIFICATION_RELATED_TYPES as [string, ...string[]]).optional(),
-  relatedId: z.string().cuid('ID liên quan không hợp lệ').optional(),
+  type: NotificationTypeEnum,
   userId: z.string().cuid('User ID không hợp lệ'),
   isRead: z.boolean().default(false),
-  metadata: z.record(z.any()).optional(),
+  data: z.record(z.string(), z.any()).optional(), // Store relatedType, relatedId, and other metadata here
 });
 export type CreateNotificationDto = z.infer<typeof createNotificationDto>;
 

@@ -4,10 +4,7 @@ import { CreateNotificationDto, UpdateNotificationDto, MarkAsReadDto, BulkMarkAs
 export class NotificationService {
   async createNotification(data: CreateNotificationDto) {
     return prisma.notification.create({
-      data: {
-        ...data,
-        metadata: data.metadata ? JSON.stringify(data.metadata) : null,
-      },
+      data,
     });
   }
 
@@ -59,10 +56,7 @@ export class NotificationService {
 
     return prisma.notification.update({
       where: { id },
-      data: {
-        ...data,
-        metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
-      },
+      data,
     });
   }
 
@@ -152,25 +146,11 @@ export class NotificationService {
       notifications.map(notification => ({
         ...notification,
         userId,
-        metadata: notification.metadata ? JSON.stringify(notification.metadata) : null,
       }))
     );
 
     return prisma.notification.createMany({
       data,
-    });
-  }
-
-  async getNotificationsByRelatedId(relatedType: string, relatedId: string) {
-    return prisma.notification.findMany({
-      where: { relatedType, relatedId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async deleteNotificationsByRelatedId(relatedType: string, relatedId: string) {
-    return prisma.notification.deleteMany({
-      where: { relatedType, relatedId },
     });
   }
 }

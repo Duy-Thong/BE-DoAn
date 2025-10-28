@@ -1,41 +1,46 @@
-import { prisma } from '../../loaders/prisma.js';
+import { AuthRepository } from './repository.js';
 import { AuthUtils } from '../../utils/auth.js';
 import { ValidationUtils } from '../../utils/validate.js';
+import { APP_CONSTANTS } from '../../utils/constants.js';
 import {
   createValidationError,
   createAuthError,
   createNotFoundError,
   createConflictError,
-  AuthenticationError,
 } from '../../utils/error.js';
 import { LoginDto, RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto } from './dto.js';
 
+/**
+ * Auth Service
+ * Handles business logic for authentication operations
+ * Uses AuthRepository for data access
+ */
 export class AuthService {
+  private authRepository: AuthRepository;
+
+  constructor() {
+    this.authRepository = new AuthRepository();
+  }
   // ========================================
   // LOGIN
   // ========================================
   async login(data: LoginDto) {
-    // NOTE: Email validation already handled by Zod in DTO
-    const email = ValidationUtils.normalizeEmail(data.email);
+    // Input validation
+    if (!data.email || !data.email.trim()) {
+      throw createValidationError('Email không được để trống');
+    }
+    if (!ValidationUtils.isValidEmail(data.email)) {
+      throw createValidationError('Email không hợp lệ');
+    }
+    if (!data.password || !data.password.trim()) {
+      throw createValidationError('Mật khẩu không được để trống');
+    }
+
+    // Email already normalized by DTO transform
+    const email = data.email;
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        passwordHash: true,
-        fullName: true,
-        role: true,
-        companyId: true,
-        companyRole: true,
-        isActive: true,
-        isLocked: true,
-        isEmailVerified: true,
-        avatarUrl: true,
-        lastLoginAt: true
-      }
-    });
+    const user = await this.authRepository.findUserForLogin(email);
 
     if (!user) {
       throw createAuthError('Email hoặc mật khẩu không đúng', 'AUTH_INVALID_CREDENTIALS');
@@ -57,10 +62,7 @@ export class AuthService {
     }
 
     // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() }
-    });
+    await this.authRepository.updateLastLogin(user.id);
 
     // Generate tokens
     const accessToken = AuthUtils.generateAccessToken(user.id, user.role, user.companyId || undefined);
@@ -86,51 +88,76 @@ export class AuthService {
   // REGISTER
   // ========================================
   async register(data: RegisterDto) {
-    // NOTE: Email validation already handled by Zod in DTO
-    const email = ValidationUtils.normalizeEmail(data.email);
+    // Input validation
+    if (!data.email || !data.email.trim()) {
+      throw createValidationError('Email không được để trống');
+    }
+    if (!ValidationUtils.isValidEmail(data.email)) {
+      throw createValidationError('Email không hợp lệ');
+    }
+    if (!data.password || !data.password.trim()) {
+      throw createValidationError('Mật khẩu không được để trống');
+    }
+    if (data.password.length < APP_CONSTANTS.PASSWORD_MIN_LENGTH) {
+      throw createValidationError(`Mật khẩu phải có ít nhất ${APP_CONSTANTS.PASSWORD_MIN_LENGTH} ký tự`);
+    }
+    if (data.password.length > APP_CONSTANTS.PASSWORD_MAX_LENGTH) {
+      throw createValidationError(`Mật khẩu không được vượt quá ${APP_CONSTANTS.PASSWORD_MAX_LENGTH} ký tự`);
+    }
+    if (!data.fullName || !data.fullName.trim()) {
+      throw createValidationError('Họ tên không được để trống');
+    }
+    if (data.fullName.length > 255) {
+      throw createValidationError('Họ tên quá dài');
+    }
 
-    // Password validation removed - no strength requirements
+    // Business validation - password strength
+    const passwordValidation = ValidationUtils.isValidPassword(data.password);
+    if (!passwordValidation.isValid) {
+      throw createValidationError(passwordValidation.errors);
+    }
 
-    // Validate phone number if provided
+    // Business validation - phone number if provided
     if (data.phoneNumber && data.phoneNumber.trim()) {
+      if (data.phoneNumber.length > 20) {
+        throw createValidationError('Số điện thoại quá dài');
+      }
       if (!ValidationUtils.isValidVietnamesePhone(data.phoneNumber)) {
         throw createValidationError('Số điện thoại không hợp lệ');
       }
     }
 
+    // Business validation - nationality if provided
+    if (data.nationality && data.nationality.length > 100) {
+      throw createValidationError('Quốc tịch quá dài');
+    }
+
+    // Email already normalized by DTO transform
+    const email = data.email;
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-    if (existingUser) {
+    const emailExists = await this.authRepository.emailExists(email);
+    if (emailExists) {
       throw createConflictError('Email đã được sử dụng');
     }
 
     // Hash password
     const passwordHash = await AuthUtils.hashPassword(data.password);
 
-    // Create user (always CANDIDATE role for public registration)
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        fullName: ValidationUtils.sanitizeString(data.fullName),
-        phoneNumber: data.phoneNumber ? ValidationUtils.sanitizeString(data.phoneNumber) : null,
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
-        gender: data.gender as any,
-        nationality: data.nationality ? ValidationUtils.sanitizeString(data.nationality) : null,
-        role: 'CANDIDATE' // Security: always CANDIDATE for public registration
-      },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        companyId: true,
-        companyRole: true,
-        isEmailVerified: true
-      }
-    });
+    // Sanitize input data
+    const sanitizedData = {
+      email,
+      passwordHash,
+      fullName: ValidationUtils.sanitizeString(data.fullName),
+      phoneNumber: data.phoneNumber ? ValidationUtils.sanitizeString(data.phoneNumber) : null,
+      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+      gender: data.gender,
+      nationality: data.nationality ? ValidationUtils.sanitizeString(data.nationality) : null,
+      role: 'CANDIDATE' // Security: always CANDIDATE for public registration
+    };
+
+    // Create user
+    const user = await this.authRepository.createUser(sanitizedData);
 
     // Generate email verification token
     const verificationToken = AuthUtils.generateEmailVerificationToken(user.id);
@@ -162,6 +189,11 @@ export class AuthService {
   // REFRESH TOKEN
   // ========================================
   async refreshToken(data: RefreshTokenDto) {
+    // Input validation
+    if (!data.refreshToken || !data.refreshToken.trim()) {
+      throw createValidationError('Refresh token không được để trống');
+    }
+
     // Verify refresh token
     const tokenResult = AuthUtils.verifyRefreshToken(data.refreshToken);
     if (!tokenResult.valid || !tokenResult.payload) {
@@ -171,16 +203,7 @@ export class AuthService {
     const { sub: userId } = tokenResult.payload;
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-        companyId: true,
-        isActive: true,
-        isLocked: true
-      }
-    });
+    const user = await this.authRepository.findUserForTokenRefresh(userId);
 
     if (!user) {
       throw createNotFoundError('Người dùng');
@@ -209,6 +232,17 @@ export class AuthService {
   // VERIFY EMAIL
   // ========================================
   async verifyEmail(data: VerifyEmailDto) {
+    // Input validation
+    if (!data.token || !data.token.trim()) {
+      throw createValidationError('Token không được để trống');
+    }
+    if (data.token.length > 1000) {
+      throw createValidationError('Token quá dài');
+    }
+    if (!/^[a-zA-Z0-9\-_]+$/.test(data.token)) {
+      throw createValidationError('Token không hợp lệ');
+    }
+
     // Verify email verification token
     const tokenResult = AuthUtils.verifyToken(data.token);
     if (!tokenResult.valid || !tokenResult.payload) {
@@ -221,10 +255,7 @@ export class AuthService {
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, isEmailVerified: true }
-    });
+    const user = await this.authRepository.findUserForEmailVerification(userId);
 
     if (!user) {
       throw createNotFoundError('Người dùng');
@@ -235,10 +266,7 @@ export class AuthService {
     }
 
     // Update email verification status
-    await prisma.user.update({
-      where: { id: userId },
-      data: { isEmailVerified: true }
-    });
+    await this.authRepository.updateEmailVerification(userId);
 
     return { message: 'Email verified successfully' };
   }
@@ -247,13 +275,18 @@ export class AuthService {
   // FORGOT PASSWORD
   // ========================================
   async forgotPassword(data: ForgotPasswordDto) {
-    // NOTE: Email validation already handled by Zod in DTO
-    const email = ValidationUtils.normalizeEmail(data.email);
+    // Input validation
+    if (!data.email || !data.email.trim()) {
+      throw createValidationError('Email không được để trống');
+    }
+    if (!ValidationUtils.isValidEmail(data.email)) {
+      throw createValidationError('Email không hợp lệ');
+    }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true }
-    });
+    // Email already normalized by DTO transform
+    const email = data.email;
+
+    const user = await this.authRepository.findUserForPasswordReset(email);
 
     if (user) {
       // Generate password reset token
@@ -271,7 +304,31 @@ export class AuthService {
   // RESET PASSWORD
   // ========================================
   async resetPassword(data: ResetPasswordDto) {
-    // Password validation removed - no strength requirements
+    // Input validation
+    if (!data.token || !data.token.trim()) {
+      throw createValidationError('Token không được để trống');
+    }
+    if (data.token.length > 1000) {
+      throw createValidationError('Token quá dài');
+    }
+    if (!/^[a-zA-Z0-9\-_]+$/.test(data.token)) {
+      throw createValidationError('Token không hợp lệ');
+    }
+    if (!data.password || !data.password.trim()) {
+      throw createValidationError('Mật khẩu không được để trống');
+    }
+    if (data.password.length < APP_CONSTANTS.PASSWORD_MIN_LENGTH) {
+      throw createValidationError(`Mật khẩu phải có ít nhất ${APP_CONSTANTS.PASSWORD_MIN_LENGTH} ký tự`);
+    }
+    if (data.password.length > APP_CONSTANTS.PASSWORD_MAX_LENGTH) {
+      throw createValidationError(`Mật khẩu không được vượt quá ${APP_CONSTANTS.PASSWORD_MAX_LENGTH} ký tự`);
+    }
+
+    // Business validation - password strength
+    const passwordValidation = ValidationUtils.isValidPassword(data.password);
+    if (!passwordValidation.isValid) {
+      throw createValidationError(passwordValidation.errors);
+    }
 
     // Verify password reset token
     const tokenResult = AuthUtils.verifyToken(data.token);
@@ -285,10 +342,7 @@ export class AuthService {
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, isActive: true, isLocked: true }
-    });
+    const user = await this.authRepository.findUserForPasswordResetVerification(userId);
 
     if (!user) {
       throw createNotFoundError('Người dùng');
@@ -306,10 +360,7 @@ export class AuthService {
     const passwordHash = await AuthUtils.hashPassword(data.password);
 
     // Update password
-    await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash }
-    });
+    await this.authRepository.updatePassword(userId, passwordHash);
 
     return { message: 'Password reset successfully' };
   }
@@ -318,17 +369,18 @@ export class AuthService {
   // RESEND VERIFICATION
   // ========================================
   async resendVerification(email: string) {
-    // Validate email
+    // Input validation
+    if (!email || !email.trim()) {
+      throw createValidationError('Email không được để trống');
+    }
     if (!ValidationUtils.isValidEmail(email)) {
       throw createValidationError('Email không hợp lệ');
     }
 
-    const normalizedEmail = ValidationUtils.normalizeEmail(email);
+    // Email already normalized by DTO transform
+    const normalizedEmail = email.toLowerCase().trim();
 
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true, email: true, isEmailVerified: true }
-    });
+    const user = await this.authRepository.findUserForResendVerification(normalizedEmail);
 
     if (!user) {
       // Don't reveal if user exists (prevent email enumeration)

@@ -1,18 +1,26 @@
 import type { Request, Response } from 'express';
 import { UsersService } from './service.js';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto.js';
-import { ErrorUtils } from '../../utils/error.js';
+import { ResponseUtils } from '../../utils/response.js';
+import { AppError } from '../../utils/error.js';
 import { FirebaseStorageService } from '../../services/firebase-storage.js';
+import { APP_CONSTANTS, USER_ROLES } from '../../utils/constants.js';
 
 const service = new UsersService();
 
 /**
- * Handle errors consistently using ErrorUtils
+ * Handle errors consistently using ResponseUtils
  */
 const handleError = (error: unknown, res: Response) => {
-  const appError = ErrorUtils.toAppError(error as Error);
-  const errorResponse = ErrorUtils.createErrorResponse(appError);
-  return res.status(appError.statusCode).json(errorResponse);
+  if (error instanceof AppError) {
+    return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
+  }
+  
+  if (error instanceof Error && error.name === 'ZodError') {
+    return ResponseUtils.badRequest(res, 'Dữ liệu không hợp lệ');
+  }
+  
+  return ResponseUtils.internalError(res, 'Có lỗi xảy ra');
 };
 
 // ========================================
@@ -23,11 +31,7 @@ export const listUsers = async (req: Request, res: Response) => {
     const query = UserQueryDto.parse(req.query);
     const result = await service.list(query);
 
-    return res.json({
-      success: true,
-      data: result.data,
-      pagination: result.pagination,
-    });
+    return ResponseUtils.paginated(res, result.data, result.pagination);
   } catch (error) {
     return handleError(error, res);
   }
@@ -41,11 +45,7 @@ export const createUser = async (req: Request, res: Response) => {
     const input = CreateUserDto.parse(req.body);
     const user = await service.create(input);
 
-    return res.status(201).json({
-      success: true,
-      data: user,
-      message: 'Tạo người dùng thành công',
-    });
+    return ResponseUtils.created(res, user, 'Tạo người dùng thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -58,10 +58,7 @@ export const getUser = async (req: Request, res: Response) => {
   try {
     const user = await service.getById(req.params.id);
 
-    return res.json({
-      success: true,
-      data: user,
-    });
+    return ResponseUtils.success(res, user);
   } catch (error) {
     return handleError(error, res);
   }
@@ -75,11 +72,7 @@ export const updateUser = async (req: Request, res: Response) => {
     const input = UpdateUserDto.parse(req.body);
     const user = await service.update(req.params.id, input);
 
-    return res.json({
-      success: true,
-      data: user,
-      message: 'Cập nhật người dùng thành công',
-    });
+    return ResponseUtils.success(res, user, 'Cập nhật người dùng thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -92,10 +85,7 @@ export const deleteUser = async (req: Request, res: Response) => {
   try {
     await service.remove(req.params.id);
 
-    return res.json({
-      success: true,
-      message: 'Xóa người dùng thành công',
-    });
+    return ResponseUtils.success(res, null, 'Xóa người dùng thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -108,11 +98,7 @@ export const lockUser = async (req: Request, res: Response) => {
   try {
     const user = await service.lockUser(req.params.id);
 
-    return res.json({
-      success: true,
-      data: user,
-      message: 'Khóa người dùng thành công',
-    });
+    return ResponseUtils.success(res, user, 'Khóa người dùng thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -125,11 +111,7 @@ export const unlockUser = async (req: Request, res: Response) => {
   try {
     const user = await service.unlockUser(req.params.id);
 
-    return res.json({
-      success: true,
-      data: user,
-      message: 'Mở khóa người dùng thành công',
-    });
+    return ResponseUtils.success(res, user, 'Mở khóa người dùng thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -142,11 +124,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const user = await service.verifyEmail(req.params.id);
 
-    return res.json({
-      success: true,
-      data: user,
-      message: 'Xác thực email thành công',
-    });
+    return ResponseUtils.success(res, user, 'Xác thực email thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -159,18 +137,12 @@ export const getMyProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Không xác định được người dùng',
-      });
+      return ResponseUtils.unauthorized(res, 'Không xác định được người dùng');
     }
 
     const user = await service.getById(userId);
 
-    return res.json({
-      success: true,
-      data: user,
-    });
+    return ResponseUtils.success(res, user);
   } catch (error) {
     return handleError(error, res);
   }
@@ -183,25 +155,17 @@ export const updateMyProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Không xác định được người dùng',
-      });
+      return ResponseUtils.unauthorized(res, 'Không xác định được người dùng');
     }
 
     const input = UpdateUserDto.parse(req.body);
 
     // Prevent users from updating sensitive fields via this endpoint
-    // Use destructuring for type safety
     const { role, isActive, isLocked, isEmailVerified, companyId, ...sanitizedInput } = input;
 
     const user = await service.update(userId, sanitizedInput);
 
-    return res.json({
-      success: true,
-      data: user,
-      message: 'Cập nhật profile thành công',
-    });
+    return ResponseUtils.success(res, user, 'Cập nhật profile thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -214,27 +178,18 @@ export const changeMyPassword = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Không xác định được người dùng',
-      });
+      return ResponseUtils.unauthorized(res, 'Không xác định được người dùng');
     }
 
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        error: 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới',
-      });
+      return ResponseUtils.badRequest(res, 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới');
     }
 
     await service.changePassword(userId, currentPassword, newPassword);
 
-    return res.json({
-      success: true,
-      message: 'Đổi mật khẩu thành công',
-    });
+    return ResponseUtils.success(res, null, 'Đổi mật khẩu thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -247,35 +202,21 @@ export const uploadMyAvatar = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Không xác định được người dùng',
-      });
+      return ResponseUtils.unauthorized(res, 'Không xác định được người dùng');
     }
 
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: 'Không có file được tải lên',
-      });
+      return ResponseUtils.badRequest(res, 'Không có file được tải lên');
     }
 
-    // Validate file type
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-    if (!allowedTypes.includes(req.file.mimetype)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Loại file không được hỗ trợ. Chỉ chấp nhận PNG, JPEG, JPG, WEBP',
-      });
+    // Validate file type using constants
+    if (!(APP_CONSTANTS.ALLOWED_IMAGE_TYPES as readonly string[]).includes(req.file.mimetype)) {
+      return ResponseUtils.badRequest(res, `Loại file không được hỗ trợ. Chỉ chấp nhận: ${APP_CONSTANTS.ALLOWED_IMAGE_TYPES.join(', ')}`);
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (req.file.size > maxSize) {
-      return res.status(400).json({
-        success: false,
-        error: 'File quá lớn. Kích thước tối đa là 5MB',
-      });
+    // Validate file size using constants
+    if (req.file.size > APP_CONSTANTS.MAX_FILE_SIZE) {
+      return ResponseUtils.badRequest(res, `File quá lớn. Kích thước tối đa là ${APP_CONSTANTS.MAX_FILE_SIZE / 1024 / 1024}MB`);
     }
 
     // Get current user to check for existing avatar
@@ -311,19 +252,15 @@ export const uploadMyAvatar = async (req: Request, res: Response) => {
       }
     }
 
-    return res.json({
-      success: true,
-      data: {
-        avatarUrl,
-        user: {
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          avatarUrl: user.avatarUrl
-        }
-      },
-      message: 'Tải lên avatar thành công',
-    });
+    return ResponseUtils.success(res, {
+      avatarUrl,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        avatarUrl: user.avatarUrl
+      }
+    }, 'Tải lên avatar thành công');
   } catch (error) {
     return handleError(error, res);
   }
@@ -336,10 +273,7 @@ export const deleteMyAvatar = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Không xác định được người dùng',
-      });
+      return ResponseUtils.unauthorized(res, 'Không xác định được người dùng');
     }
 
     // Get current user to check for existing avatar
@@ -365,18 +299,14 @@ export const deleteMyAvatar = async (req: Request, res: Response) => {
       }
     }
 
-    return res.json({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          avatarUrl: user.avatarUrl
-        }
-      },
-      message: 'Xóa avatar thành công',
-    });
+    return ResponseUtils.success(res, {
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        avatarUrl: user.avatarUrl
+      }
+    }, 'Xóa avatar thành công');
   } catch (error) {
     return handleError(error, res);
   }
