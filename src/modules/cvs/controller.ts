@@ -8,6 +8,18 @@ import { pdfGeneratorService, PDFGenerationOptions, CVWithNestedData } from '../
 
 const cvService = new CVService();
 
+/**
+ * Sanitize filename để loại bỏ ký tự không hợp lệ trong HTTP header
+ */
+function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Loại bỏ control characters
+    .replace(/[<>:"/\\|?*]/g, '') // Loại bỏ ký tự đặc biệt không hợp lệ cho filename
+    .replace(/\s+/g, '_') // Thay space bằng underscore
+    .replace(/[^\w\-_.]/g, '') // Chỉ giữ lại alphanumeric, dash, underscore, dot
+    .substring(0, 200); // Giới hạn độ dài
+}
+
 export class CVController {
 
   // Tạo CV hoàn chỉnh với tất cả thông tin
@@ -214,9 +226,12 @@ export class CVController {
       const pdfBuffer = await pdfGeneratorService.generateCVPDF(cvData, pdfOptions);
 
       // Set headers cho PDF download
-      const fileName = `${cvData.fullName.replace(/\s+/g, '_')}_CV.pdf`;
+      const safeFileName = sanitizeFileName(cvData.fullName || 'CV');
+      const fileName = `${safeFileName}_CV.pdf`;
+      
+      // Sử dụng RFC 5987 encoding cho filename với ký tự đặc biệt
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
       res.setHeader('Content-Length', pdfBuffer.length);
 
       return res.send(pdfBuffer);
@@ -225,8 +240,16 @@ export class CVController {
         return ResponseUtils.error(res, error.message, error.statusCode, undefined, error.code);
       }
 
+      // Log chi tiết lỗi
       console.error('PDF Generation Error:', error);
-      return ResponseUtils.internalError(res, 'Lỗi khi tạo PDF');
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+
+      // Trả về message lỗi chi tiết hơn
+      const errorMessage = error instanceof Error ? error.message : 'Lỗi khi tạo PDF';
+      return ResponseUtils.internalError(res, errorMessage);
     }
   }
 
@@ -262,9 +285,12 @@ export class CVController {
       const pdfBuffer = await pdfGeneratorService.generateCVPDF(cvData, pdfOptions);
 
       // Set headers cho PDF download
-      const fileName = `${cvData.fullName.replace(/\s+/g, '_')}_Main_CV.pdf`;
+      const safeFileName = sanitizeFileName(cvData.fullName || 'CV');
+      const fileName = `${safeFileName}_Main_CV.pdf`;
+      
+      // Sử dụng RFC 5987 encoding cho filename với ký tự đặc biệt
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
       res.setHeader('Content-Length', pdfBuffer.length);
 
       return res.send(pdfBuffer);

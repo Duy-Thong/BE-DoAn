@@ -333,23 +333,40 @@ export class PDFGeneratorService {
     cvData: CVWithNestedData,
     options: PDFGenerationOptions = {}
   ): Promise<Buffer> {
+    const templateName = options.template || 'default';
+    
     try {
-      const templateName = options.template || 'default';
       const preparedData = this.prepareCVData(cvData);
       
       let html: string;
       
       // Kiểm tra nếu template là ID hoặc slug (database template)
       if (this.isTemplateIdOrSlug(templateName)) {
-        html = await this.renderHTMLFromDatabase(templateName, preparedData);
+        try {
+          html = await this.renderHTMLFromDatabase(templateName, preparedData);
+        } catch (dbError) {
+          throw new Error(`Failed to load template "${templateName}" from database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+        }
       } else {
         // Fallback to file system template
-        html = this.renderHTML(templateName, preparedData);
+        try {
+          html = this.renderHTML(templateName, preparedData);
+        } catch (fsError) {
+          throw new Error(`Failed to load template "${templateName}" from file system: ${fsError instanceof Error ? fsError.message : 'Unknown error'}`);
+        }
       }
       
-      return await this.generatePDFFromHTML(html, options);
+      try {
+        return await this.generatePDFFromHTML(html, options);
+      } catch (pdfError) {
+        throw new Error(`Failed to generate PDF from HTML: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'}`);
+      }
     } catch (error) {
-      throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Re-throw với context rõ ràng hơn
+      if (error instanceof Error && error.message.includes('Failed to')) {
+        throw error;
+      }
+      throw new Error(`Failed to generate PDF for template "${templateName}": ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
