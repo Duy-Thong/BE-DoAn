@@ -53,6 +53,21 @@ export const JobResponse = z.object({
 });
 export type JobResponse = z.infer<typeof JobResponse>;
 
+// Query/Filter DTO for listing jobs
+export const JobQueryDto = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().optional(),
+  location: z.string().optional(),
+  industry: z.string().optional(),
+  experienceLevel: z.enum(['ENTRY', 'JUNIOR', 'MID', 'SENIOR', 'LEAD']).optional(),
+  type: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP']).optional(),
+  isActive: z.coerce.boolean().optional(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'urgent', 'applicationCount']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+export type JobQueryDto = z.infer<typeof JobQueryDto>;
+
 // Re-export types for convenience
 export type { CreateJobRequirementDto, UpdateJobRequirementDto } from './requirements/dto.js';
 export type { CreateJobBenefitDto, UpdateJobBenefitDto } from './benefits/dto.js';

@@ -2,11 +2,84 @@ import { prisma } from '../../loaders/prisma.js';
 import type { CreateJobDto, UpdateJobDto, RepostJobDto } from './dto.js';
 
 export class JobsService {
-  async list() {
-    return prisma.job.findMany({ 
-      where: { 
-        isActive: true
-      }, 
+  async list(options?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    location?: string;
+    industry?: string;
+    experienceLevel?: string;
+    type?: string;
+    isActive?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) {
+    const page = options?.page || 1;
+    const limit = options?.limit || 10;
+    const skip = (page - 1) * limit;
+    const sortBy = options?.sortBy || 'createdAt';
+    const sortOrder = options?.sortOrder || 'desc';
+
+    // Build where clause
+    const where: any = {};
+    
+    // Default to active jobs only if isActive is not explicitly set
+    if (options?.isActive !== undefined) {
+      where.isActive = options.isActive;
+    } else {
+      where.isActive = true;
+    }
+
+    // Add search filter
+    if (options?.search) {
+      where.OR = [
+        { title: { contains: options.search, mode: 'insensitive' } },
+        { description: { contains: options.search, mode: 'insensitive' } }
+      ];
+    }
+
+    // Add location filter
+    if (options?.location) {
+      where.location = { contains: options.location, mode: 'insensitive' };
+    }
+
+    // Add industry filter
+    if (options?.industry) {
+      where.industry = { contains: options.industry, mode: 'insensitive' };
+    }
+
+    // Add experience level filter
+    if (options?.experienceLevel) {
+      where.experienceLevel = options.experienceLevel;
+    }
+
+    // Add type filter
+    if (options?.type) {
+      where.type = options.type;
+    }
+
+    // Get total count
+    const total = await prisma.job.count({ where });
+
+    // Build orderBy
+    // Always sort by urgent first (if not explicitly sorting by urgent), then by the specified field
+    let orderBy: any = [];
+    if (sortBy === 'urgent') {
+      orderBy = [
+        { urgent: sortOrder },
+        { createdAt: 'desc' }
+      ];
+    } else {
+      // Sort by urgent first, then by the specified field
+      orderBy = [
+        { urgent: 'desc' },
+        { [sortBy]: sortOrder }
+      ];
+    }
+
+    // Get jobs with pagination
+    const jobs = await prisma.job.findMany({ 
+      where,
       include: {
         company: {
           select: {
@@ -24,11 +97,23 @@ export class JobsService {
           }
         }
       },
-      orderBy: [
-        { urgent: 'desc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy,
+      skip,
+      take: limit
     });
+
+    // Remove embedding from response (not needed for frontend, reduces payload size)
+    const jobsWithoutEmbedding = jobs.map(({ embedding, ...job }) => job);
+
+    return {
+      data: jobsWithoutEmbedding,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   async create(input: CreateJobDto) {
@@ -331,8 +416,11 @@ export class JobsService {
       take: limit
     });
 
+    // Remove embedding from response (not needed for frontend, reduces payload size)
+    const jobsWithoutEmbedding = jobs.map(({ embedding, ...job }) => job);
+
     return {
-      data: jobs,
+      data: jobsWithoutEmbedding,
       meta: {
         total,
         page,

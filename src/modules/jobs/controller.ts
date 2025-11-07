@@ -1,20 +1,35 @@
 import type { Request, Response } from 'express';
 import { JobsService } from './service.js';
-import { CreateJobDto, UpdateJobDto, RepostJobDto } from './dto.js';
+import { CreateJobDto, UpdateJobDto, RepostJobDto, JobQueryDto } from './dto.js';
 
 const service = new JobsService();
 
-export const listJobs = async (_req: Request, res: Response) => {
+export const listJobs = async (req: Request, res: Response) => {
   try {
-    const jobs = await service.list();
+    // Parse query parameters
+    const query = JobQueryDto.parse(req.query);
+    
+    const result = await service.list({
+      page: query.page,
+      limit: query.limit,
+      search: query.search,
+      location: query.location,
+      industry: query.industry,
+      experienceLevel: query.experienceLevel,
+      type: query.type,
+      isActive: query.isActive,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder
+    });
+    
     res.json({ 
       success: true,
-      data: jobs 
+      ...result
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch jobs'
+      error: error instanceof Error ? error.message : 'Failed to fetch jobs'
     });
   }
 };
