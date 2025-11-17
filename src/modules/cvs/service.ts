@@ -34,7 +34,6 @@ export class CVService {
           phoneNumber: data.phoneNumber,
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
           gender: data.gender as Gender,
-          nationality: data.nationality,
           address: data.address,
           avatarUrl: data.avatarUrl,
           currentPosition: data.currentPosition,
@@ -42,7 +41,9 @@ export class CVService {
           objective: data.objective,
           userId,
           isMain: existingCVs === 0 || data.isMain,
-          embedding: [],
+          titleEmbedding: [],
+          experienceEmbedding: [],
+          targetEmbedding: [],
         },
       });
 
@@ -254,7 +255,6 @@ export class CVService {
       if (data.phoneNumber !== undefined) updateData.phoneNumber = data.phoneNumber;
       if (data.dateOfBirth !== undefined) updateData.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
       if (data.gender !== undefined) updateData.gender = data.gender as Gender;
-      if (data.nationality !== undefined) updateData.nationality = data.nationality;
       if (data.address !== undefined) updateData.address = data.address;
       if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
       if (data.currentPosition !== undefined) updateData.currentPosition = data.currentPosition;
@@ -598,21 +598,25 @@ export class CVService {
     });
   }
 
-  // Generate CV embedding (for AI recommendations)
+  // Generate CV embeddings (for AI recommendations)
   async generateEmbedding(cvId: string, userId: string) {
     const cv = await this.getCVById(cvId, userId);
     if (!cv) {
       throw createNotFoundError('CV');
     }
 
-    // TODO: Call AI service to generate embedding
-    // For now, return empty array
-    const embedding: number[] = [];
+    // TODO: Call AI service to generate embeddings
+    // For now, return empty arrays
+    const titleEmbedding: number[] = [];
+    const experienceEmbedding: number[] = [];
+    const targetEmbedding: number[] = [];
     
     return await prisma.cV.update({
       where: { id: cvId },
       data: { 
-        embedding,
+        titleEmbedding,
+        experienceEmbedding,
+        targetEmbedding,
         lastGeneratedAt: new Date()
       }
     });
@@ -660,7 +664,6 @@ export class CVService {
           phoneNumber: originalCV.phoneNumber,
           dateOfBirth: originalCV.dateOfBirth,
           gender: originalCV.gender,
-          nationality: originalCV.nationality,
           address: originalCV.address,
           avatarUrl: originalCV.avatarUrl,
           currentPosition: originalCV.currentPosition,
@@ -668,7 +671,9 @@ export class CVService {
           objective: originalCV.objective,
           userId,
           isMain: false, // CV duplicate không bao giờ là main
-          embedding: [],
+          titleEmbedding: originalCV.titleEmbedding || [],
+          experienceEmbedding: originalCV.experienceEmbedding || [],
+          targetEmbedding: originalCV.targetEmbedding || [],
         },
       });
 

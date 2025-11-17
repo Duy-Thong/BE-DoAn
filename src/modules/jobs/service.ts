@@ -206,6 +206,44 @@ export class JobsService {
     });
   }
 
+  // Get jobs by IDs (for AI recommendations)
+  async getByIds(jobIds: string[]) {
+    const jobs = await prisma.job.findMany({ 
+      where: { 
+        id: { in: jobIds },
+        isActive: true // Only get active jobs
+      },
+      include: {
+        company: {
+          select: {
+            name: true,
+            logoUrl: true,
+            isVerified: true
+          }
+        },
+        requirements: true,
+        benefits: true,
+        jobSkills: true,
+        _count: {
+          select: {
+            applications: true
+          }
+        }
+      }
+    });
+
+    // Remove embedding from response (not needed for frontend, reduces payload size)
+    const jobsWithoutEmbedding = jobs.map(({ embedding, ...job }) => job);
+
+    // Preserve order from jobIds array
+    const jobMap = new Map(jobsWithoutEmbedding.map(job => [job.id, job]));
+    const orderedJobs = jobIds
+      .map(id => jobMap.get(id))
+      .filter((job): job is NonNullable<typeof job> => job !== undefined);
+
+    return orderedJobs;
+  }
+
   async update(id: string, input: UpdateJobDto) {
     const data: any = {};
     if (input.title !== undefined) data.title = input.title;

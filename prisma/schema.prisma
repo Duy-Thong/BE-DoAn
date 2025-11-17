@@ -9,222 +9,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Basic models for recruiting system
-model User {
-  id              String         @id @default(cuid())
-  email           String         @unique
-  passwordHash    String
-  fullName        String
-  phoneNumber     String?
-  dateOfBirth     DateTime?
-  gender          Gender?
-  nationality     String?
-  role            UserRole       @default(CANDIDATE)
-  isActive        Boolean        @default(true)
-  isLocked        Boolean        @default(false)
-  isEmailVerified Boolean        @default(false)
-  lastLoginAt     DateTime?
-  avatarUrl       String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
-  // Company relationship (one-to-many)
-  companyId       String?
-  companyRole     CompanyRole?   @default(VIEWER)
-  joinedAt        DateTime?      @default(now())
-  
-  // Relations (for querying, not stored in database)
-  company         Company?       @relation(fields: [companyId], references: [id])
-  
-  // Core relationships only
-  savedJobs       SavedJob[]
-  cvs             CV[]
-  notifications   Notification[]
-  
-  // CV Template management relations
-  createdTemplates CVTemplate[] @relation("TemplateCreatedBy")
-  updatedTemplates CVTemplate[] @relation("TemplateUpdatedBy")
-  
-  // Social media profiles (polymorphic relationship via ownerType + ownerId)
-  
-  @@index([email])
-  @@index([phoneNumber])
-  @@index([role])
-  @@index([isActive])
-  @@index([companyId])
-}
-
-// CANDIDATE -> ĐĂNG KÝ CTY ( PHÊ DUYỆT ) -> OWNER CTY , INVITE USER KHÁC VÀO CTY VÀ GẮN ROLE .
-model Company {
-  id              String   @id @default(cuid())
-  name            String
-  website         String?
-  description     String?
-  industry        String?
-  companySize     CompanySize?
-  foundedYear     Int?
-  address         String?
-  phone           String?
-  email           String?
-  logoUrl         String?
-  bannerUrl       String?
-  isVerified      Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  isEmailVerified Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  jobs            Job[]
-  users           User[]   // 1 company có nhiều users, 1 user chỉ thuộc về 1 company
-  
-  // Social media profiles (polymorphic relationship via ownerType + ownerId)
-  
-  @@index([name])
-  @@index([industry])
-  @@index([isActive, isVerified])
-  @@index([createdAt])
-}
-
-
-model CV {
-  id              String   @id @default(cuid())
-  title           String
-  isMain          Boolean  @default(false)
-  
-  // Personal Information
-  fullName        String
-  email           String
-  phoneNumber     String?
-  dateOfBirth     DateTime?
-  gender          Gender?
-  nationality     String?
-  address         String?
-  avatarUrl       String?
-  
-  
-  // Current Position (like LinkedIn headline)
-  currentPosition String?  // "Senior Developer at ABC Corp"
-  
-  // Professional Summary
-  summary         String?
-  objective       String?
-  
-  // Relationships to detailed information
-  workExperience  WorkExperience[]
-  education       Education[]
-  languages       Language[]
-  certifications  Certification[]
-  projects        Project[]
-  achievements    Achievement[]
-  references      Reference[]
-  skills          CVSkill[]
-  activities      Activity[]
-  applications    Application[]
-  
-  // Social media profiles (polymorphic relationship via ownerType + ownerId)
-    
-  // Metadata
-  lastGeneratedAt DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  userId          String
-  embedding       Float[]
-  
-  // Relations (for querying, not stored in database)
-  user            User     @relation(fields: [userId], references: [id])
-  
-  @@index([userId])
-  @@index([isMain])
-  @@index([createdAt])
-}
-
-model Job {
-  id              String        @id @default(cuid())
-  title           String
-  description     String?
-  location        String?
-  industry        String?
-  experienceLevel ExperienceLevel?
-  type            JobType       @default(FULL_TIME)
-  salary          Float?
-  embedding       Float[] 
-  urgent          Boolean       @default(false)  // job dang tuyen gap
-  isActive        Boolean       @default(true)
-  expiresAt       DateTime?
-  applicationCount Int          @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  companyId       String
-  
-  // Relations (for querying, not stored in database)
-  company         Company       @relation(fields: [companyId], references: [id])
-  applications    Application[]
-  savedJobs       SavedJob[]
-
-  requirements    JobRequirement[]
-  benefits        JobBenefit[]
-  jobSkills       JobSkill[]
-  
-  @@index([companyId])
-  @@index([isActive])
-  @@index([type])
-  @@index([createdAt])
-  @@index([expiresAt])
-}
-
-model Application {
-  id              String   @id @default(cuid())
-  status          AppStatus @default(PENDING)
-  cvId            String
-  jobId           String
-  coverLetter     String?
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations (for querying, not stored in database)
-  cv              CV       @relation(fields: [cvId], references: [id])
-  job             Job      @relation(fields: [jobId], references: [id])
-  
-  // Cho phép ứng tuyển lại nếu đã bị từ chối
-  @@index([cvId, jobId, status])
-  @@index([jobId, status])
-  @@index([createdAt])
-}
-
-
-
-model SocialMedia {
-  id          String   @id @default(cuid())
-  platform    String   // linkedin, facebook, twitter, instagram, github, blog, website, etc.
-  url         String
-  
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Polymorphic relationship - simplified approach
-  ownerType   String   // "User", "Company", "CV"
-  ownerId     String   // ID of the owner (user, company, or cv)
-  
-  @@index([platform])
-  @@index([ownerType, ownerId])
-}
-
-model SavedJob {
-  id        String   @id @default(cuid())
-  userId    String
-  jobId     String
-  createdAt DateTime @default(now())
-  
-  // Relations (for querying, not stored in database)
-  user      User     @relation(fields: [userId], references: [id])
-  job       Job      @relation(fields: [jobId], references: [id])
-  
-  @@unique([userId, jobId])
-  @@index([userId])
-  @@index([createdAt])
-}
-
+// ============================================
+// ENUMS
+// ============================================
 
 enum UserRole {
   ADMIN
@@ -252,7 +39,6 @@ enum AppStatus {
   REJECTED
 }
 
-// New Enums
 enum Gender {
   MALE
   FEMALE
@@ -266,14 +52,6 @@ enum CompanySize {
   MEDIUM       // 51-200
   LARGE        // 201-1000
   ENTERPRISE   // 1000+
-}
-
-enum UploadCategory {
-  AVATAR
-  LOGO
-  DOCUMENT
-  CV_FILE
-  OTHER
 }
 
 enum ExperienceLevel {
@@ -295,8 +73,6 @@ enum NotificationType {
   SYSTEM_ANNOUNCEMENT
 }
 
-// InterviewStatus enum removed - Interview model removed
-
 enum SkillLevel {
   BEGINNER
   INTERMEDIATE
@@ -311,170 +87,432 @@ enum LanguageLevel {
   NATIVE
 }
 
-// New Models
-model Notification {
-  id          String   @id @default(cuid())
-  title       String
-  message     String
-  type        NotificationType
-  isRead      Boolean  @default(false)
-  data        Json?    // Dữ liệu bổ sung
-  createdAt   DateTime @default(now())
-  userId      String
+
+// ============================================
+// CORE MODELS
+// ============================================
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  passwordHash String
+  fullName    String
+  phoneNumber String
+  gender      Gender?
+  role        UserRole     @default(CANDIDATE)
+  dateOfBirth DateTime?
+  status      String       @default("ACTIVE") // hoạt động, không hoạt động, đã bị khóa
+  lastLoginAt DateTime?
+  avatarUrl   String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   
-  // Relations (for querying, not stored in database)
-  user        User     @relation(fields: [userId], references: [id])
+  // Relations
+  savedJobs       SavedJob[]
+  cvs             CV[]
+  notifications   Notification[]
+  companyMembers  CompanyMember[]
+  
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([role])
+  @@index([status])
+}
+
+model CompanyMember {
+  id          String      @id @default(cuid())
+  userId      String
+  companyId   String
+  companyRole String      // CompanyRole enum value as string
+  joinedAt    DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+  @@index([companyRole])
+}
+
+model Company {
+  id           String      @id @default(cuid())
+  name         String
+  website      String?
+  description  String?
+  industry     String?
+  companySize  CompanySize?
+  foundedYear  Int?
+  address      String?
+  phone        String?
+  email        String?
+  logoUrl      String?
+  bannerUrl    String?
+  status       String        @default("REGISTERED") // đã đăng ký, đang hoạt động, không hoạt động, bị khóa
+  documentUrl  String?     // Đường dẫn đến giấy tờ công ty (dùng khi request tạo công ty)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  // Relations
+  jobs           Job[]
+  companyMembers CompanyMember[]
+  
+  @@index([name])
+  @@index([industry])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CV {
+  id              String   @id @default(cuid())
+  title           String
+  isMain          Boolean  @default(false)
+  fullName        String
+  email           String
+  phoneNumber     String?
+  dateOfBirth     DateTime?
+  gender          Gender?
+  address         String?
+  currentPosition String?
+  summary         String?
+  objective       String?
+  isOpenForJob    Boolean  @default(false) // Có công khai CV để nhà tuyển dụng tìm được không
+  lastGeneratedAt DateTime?
+  titleEmbedding       Float[]  // Embedding của title CV
+  experienceEmbedding Float[]  // Embedding của work experience
+  targetEmbedding      Float[]  // Embedding của mục tiêu nghề nghiệp (objective/target)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workExperience  WorkExperience[]
+  education       Education[]
+  languages       Language[]
+  certifications  Certification[]
+  projects        Project[]
+  achievements    Achievement[]
+  references      Reference[]
+  skills          CVSkill[]
+  activities      Activity[]
+  applications    Application[]
+  recommendJobs   RecommendJobforCV[]
+  
+  @@index([userId])
+  @@index([isMain])
+  @@index([isOpenForJob])
+  @@index([createdAt])
+}
+
+model Job {
+  id              String        @id @default(cuid())
+  title           String
+  description     String?
+  location        String?
+  industry        String?
+  experienceLevel ExperienceLevel?
+  type            JobType       @default(FULL_TIME)
+  titleEmbedding       Float[]  // Embedding của job title
+  descriptionEmbedding Float[]  // Embedding của job description
+  requirementEmbedding Float[]  // Embedding của job requirements
+  urgent          Boolean       @default(false)
+  status          String        @default("ACTIVE") // Trạng thái tin tuyển dụng
+  expiresAt       DateTime?
+  applicationCount Int          @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  companyId       String
+  salaryId        String?
+  
+  // Relations
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  salary          Salary?       @relation(fields: [salaryId], references: [id], onDelete: SetNull)
+  applications    Application[]
+  savedJobs       SavedJob[]
+  requirements    JobRequirement[]
+  benefits        JobBenefit[]
+  similarJobs     SimilarJob[]  @relation("JobSimilarTo")
+  similarToJobs   SimilarJob[]  @relation("SimilarToJob")
+  recommendJobs   RecommendJobforCV[]
+  
+  @@index([companyId])
+  @@index([status])
+  @@index([type])
+  @@index([expiresAt])
+  @@index([createdAt])
+}
+
+model Salary {
+  id            String   @id @default(cuid())
+  minAmount     Decimal  @db.Decimal(12, 2)
+  maxAmount     Decimal? @db.Decimal(12, 2)
+  currency      String   @default("VND")
+  isNegotiable  Boolean  @default(false)
+  hideAmount    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  jobs Job[]
+  
+  @@index([currency])
+}
+
+model Application {
+  id          String    @id @default(cuid())
+  status      AppStatus @default(PENDING)
+  cvId        String
+  jobId       String
+  coverLetter String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  cv  CV  @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  @@index([cvId, jobId, status])
+  @@index([jobId, status])
+  @@index([createdAt])
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  userId    String
+  jobId     String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, jobId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SocialMedia {
+  id        String   @id @default(cuid())
+  platform  String   // linkedin, facebook, twitter, instagram, github, blog, website, etc.
+  url       String
+  createdAt DateTime @default(now())
+  
+  // Polymorphic relationship - simplified approach
+  ownerType String // "User", "Company", "CV"
+  ownerId   String // ID of the owner (user, company, or cv)
+  
+  @@index([platform])
+  @@index([ownerType, ownerId])
+}
+
+model SimilarJob {
+  id          String   @id @default(cuid())
+  jobId       String   // Job chính
+  similarJobId String  // Job tương tự
+  similarity  Float    // Điểm số tương đồng (0-1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  job         Job @relation("JobSimilarTo", fields: [jobId], references: [id], onDelete: Cascade)
+  similarJob  Job @relation("SimilarToJob", fields: [similarJobId], references: [id], onDelete: Cascade)
+  
+  @@unique([jobId, similarJobId])
+  @@index([jobId])
+  @@index([similarJobId])
+  @@index([similarity])
+}
+
+model RecommendJobforCV {
+  id         String   @id @default(cuid())
+  cvId       String
+  jobId      String
+  similarity Float    // Điểm số (độ) tương đồng/phù hợp giữa CV và Job
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  cv  CV  @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  @@unique([cvId, jobId])
+  @@index([cvId])
+  @@index([jobId])
+  @@index([similarity])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  expiresAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  userId    String
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([userId, isRead])
   @@index([createdAt])
   @@index([type])
+  @@index([expiresAt])
 }
 
-
+// ============================================
+// CV RELATED MODELS
+// ============================================
 
 model WorkExperience {
-  id          String   @id @default(cuid())
-  title       String   // Job title/position
-  company     String
+  id          String    @id @default(cuid())
+  title       String    // Chức danh, vị trí công việc
+  company     String    // Tên công ty đã làm việc
   startDate   DateTime
   endDate     DateTime?
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   cvId        String
   
-  // Relations (for querying, not stored in database)
-  cv          CV       @relation(fields: [cvId], references: [id])
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
   
   @@index([cvId])
 }
 
 model Education {
-  id          String   @id @default(cuid())
-  institution String
-  degree      String
+  id          String    @id @default(cuid())
+  institution String    // Tên trường học, cơ sở đào tạo
+  degree      String    // Bằng cấp
   startDate   DateTime
   endDate     DateTime?
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   cvId        String
   
-  // Relations (for querying, not stored in database)
-  cv          CV       @relation(fields: [cvId], references: [id])
-  
-  @@index([cvId])
-}
-
-model Language {
-  id          String   @id @default(cuid())
-  name        String
-  level       String?  // Basic, Intermediate, Advanced, Native
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  cvId        String
-  
-  // Relations (for querying, not stored in database)
-  cv          CV       @relation(fields: [cvId], references: [id])
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
   
   @@index([cvId])
 }
 
 model Certification {
-  id          String   @id @default(cuid())
-  name        String
-  issuer      String?
-  acquiredAt  DateTime
+  id          String    @id @default(cuid())
+  name        String    // Tên của chứng chỉ
+  issuer      String?   // Tổ chức/Đơn vị cấp chứng chỉ
+  acquiredAt  DateTime  // Ngày/tháng/năm nhận được chứng chỉ
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   cvId        String
   
-  // Relations (for querying, not stored in database)
-  cv          CV       @relation(fields: [cvId], references: [id])
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
   
   @@index([cvId])
 }
 
 model Project {
-  id          String   @id @default(cuid())
-  name        String
+  id          String    @id @default(cuid())
+  name        String    // Tên dự án
   description String?
   startDate   DateTime
   endDate     DateTime?
   url         String?
-  role        String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  role        String?   // Vai trò của bạn trong dự án
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   cvId        String
   
-  // Relations (for querying, not stored in database)
-  cv          CV       @relation(fields: [cvId], references: [id])
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  
+  @@index([cvId])
+}
+
+model Language {
+  id          String        @id @default(cuid())
+  name        String        // Tên ngôn ngữ
+  level       LanguageLevel // Cấp độ thành thạo
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  cvId        String
+  
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
   
   @@index([cvId])
 }
 
 model Achievement {
-  id          String   @id @default(cuid())
-  title       String
+  id          String    @id @default(cuid())
+  title       String    // Tên hoặc tiêu đề của thành tích
   description String?
-  acquiredAt  DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  acquiredAt  DateTime  // Ngày/tháng/năm đạt được thành tựu
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   cvId        String
   
-  // Relations (for querying, not stored in database)
-  cv          CV       @relation(fields: [cvId], references: [id])
-  
-  @@index([cvId])
-}
-
-model Reference {
-  id          String   @id @default(cuid())
-  name        String
-  position    String?
-  company     String?
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  cvId        String
-  
-  // Relations (for querying, not stored in database)
-  cv          CV       @relation(fields: [cvId], references: [id])
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
   
   @@index([cvId])
 }
 
 model Activity {
-  id          String   @id @default(cuid())
-  title       String   // "Volunteer Work", "Open Source Contribution", "Speaking", etc.
-  organization String? // Organization or event name
+  id          String    @id @default(cuid())
+  title       String    // Tên hoạt động
+  organization String?  // Tổ chức/Câu lạc bộ nơi tham gia hoạt động
   startDate   DateTime
   endDate     DateTime?
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   cvId        String
   
-  // Relations (for querying, not stored in database)
-  cv          CV       @relation(fields: [cvId], references: [id])
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  
+  @@index([cvId])
+}
+
+model Reference {
+  id          String    @id @default(cuid())
+  name        String    // Tên của người tham chiếu
+  position    String?   // Chức vụ của người tham chiếu
+  company     String?   // Công ty nơi người tham chiếu làm việc
+  description String?   // Thông tin liên hệ (SĐT, email) hoặc mô tả mối quan hệ
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  cvId        String
+  
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
   
   @@index([cvId])
 }
 
 model CVSkill {
-  id                  String   @id @default(cuid())
-  skillName           String   // "JavaScript", "React", "Python", etc.
-  level               SkillLevel
-  yearsOfExperience   Int?
-  description         String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  cvId                String
+  id                String      @id @default(cuid())
+  skillName         String       // "JavaScript", "React", "Python", etc.
+  level             SkillLevel
+  yearsOfExperience Int?
+  description       String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  cvId              String
   
-  // Relations (for querying, not stored in database)
-  cv                  CV       @relation(fields: [cvId], references: [id])
+  // Relations
+  cv CV @relation(fields: [cvId], references: [id], onDelete: Cascade)
   
   @@unique([cvId, skillName])
   @@index([cvId])
@@ -482,110 +520,51 @@ model CVSkill {
   @@index([level])
 }
 
+// ============================================
+// JOB RELATED MODELS
+// ============================================
+
 model JobRequirement {
-  id          String   @id @default(cuid())
-  title       String   // "Skills", "Experience", "Education", etc.
+  id          String    @id @default(cuid())
+  title       String    // Tiêu đề yêu cầu (ví dụ: Yêu cầu về kỹ năng, Yêu cầu về thái độ)
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   jobId       String
   
-  // Relations (for querying, not stored in database)
-  job         Job      @relation(fields: [jobId], references: [id])
+  // Relations
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
   
   @@index([jobId])
 }
 
 model JobBenefit {
-  id          String   @id @default(cuid())
-  title       String   // "Health Insurance", "Remote Work", "Bonus", etc.
+  id          String    @id @default(cuid())
+  title       String    // Tên phúc lợi
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   jobId       String
-  
-  // Relations (for querying, not stored in database)
-  job         Job      @relation(fields: [jobId], references: [id])
-  
-  @@index([jobId])
-}
-
-model JobSkill {
-  id          String   @id @default(cuid())
-  skillName   String   // Direct skill name: "JavaScript", "React", "Python", etc.
-  isRequired  Boolean  @default(true)
-  jobId       String
-  
-  // Relations (for querying, not stored in database)
-  job         Job      @relation(fields: [jobId], references: [id])
-  
-  @@unique([jobId, skillName])
-  @@index([jobId])
-  @@index([skillName])
-}
-
-// File uploads tracking
-model Upload {
-  id          String   @id @default(cuid())
-  fileName    String
-  originalName String
-  mimeType    String
-  size        Int
-  path        String
-  url         String   // Full URL to access the file
-  title       String?  // Optional title for the file
-  description String?  // Optional description
-  category    UploadCategory
-  uploadedBy  String?  // User ID who uploaded
-  userId      String?  // Alias for uploadedBy for compatibility
-  createdAt   DateTime @default(now())
-  
-  @@index([uploadedBy])
-  @@index([userId])
-  @@index([category])
-  @@index([createdAt])
-}
-
-// CV Template management
-model CVTemplate {
-  id          String   @id @default(cuid())
-  name        String   // Template name: "Modern", "Classic", "Creative"
-  slug        String   @unique // URL-friendly identifier
-  description String?  // Template description
-  category    String   // "professional", "creative", "academic", "minimal"
-  isActive    Boolean  @default(true)
-  isDefault   Boolean  @default(false) // Default template for new users
-  isPremium   Boolean  @default(false) // Premium template (paid)
-  
-  // Firebase Storage URLs - chỉ lưu URL, không lưu content
-  htmlUrl     String   // Firebase Storage URL for HTML file (required)
-  previewUrl  String?  // Preview image URL
-  
-  // Template metadata
-  version     String   @default("1.0.0")
-  author      String?  // Template author
-  tags        String[] // Tags for filtering: ["modern", "tech", "design"]
-  
-  // Usage statistics
-  usageCount  Int      @default(0)
-  downloadCount Int    @default(0)
-  
-  // Admin management
-  createdBy   String?  // Admin user who created this template
-  updatedBy   String?  // Admin user who last updated
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
   
   // Relations
-  createdByUser User? @relation("TemplateCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser User? @relation("TemplateUpdatedBy", fields: [updatedBy], references: [id])
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
   
-  @@index([slug])
-  @@index([category])
+  @@index([jobId])
+}
+
+// ============================================
+// TEMPLATE MODEL
+// ============================================
+
+model CVTemplate {
+  id        String   @id @default(cuid())
+  name      String   // Tên template
+  htmlUrl   String   // Đường dẫn (URL hoặc local path) tới file HTML của template
+  isActive  Boolean  @default(true) // Đánh dấu template có đang được sử dụng hay không
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
   @@index([isActive])
-  @@index([isDefault])
-  @@index([isPremium])
   @@index([createdAt])
-  @@index([usageCount])
 }
 

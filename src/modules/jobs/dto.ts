@@ -65,6 +65,7 @@ export const JobQueryDto = z.object({
   isActive: z.coerce.boolean().optional(),
   sortBy: z.enum(['createdAt', 'updatedAt', 'urgent', 'applicationCount']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  userId: z.string().optional(), // Optional: user ID for AI recommendations
 });
 export type JobQueryDto = z.infer<typeof JobQueryDto>;
 

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { JobsService } from './service.js';
 import { CreateJobDto, UpdateJobDto, RepostJobDto, JobQueryDto } from './dto.js';
+import { aiConfig } from '../../config/ai.js';
 
 const service = new JobsService();
 
@@ -9,18 +10,91 @@ export const listJobs = async (req: Request, res: Response) => {
     // Parse query parameters
     const query = JobQueryDto.parse(req.query);
     
-    const result = await service.list({
-      page: query.page,
-      limit: query.limit,
-      search: query.search,
-      location: query.location,
-      industry: query.industry,
-      experienceLevel: query.experienceLevel,
-      type: query.type,
-      isActive: query.isActive,
-      sortBy: query.sortBy,
-      sortOrder: query.sortOrder
-    });
+    // Get user ID from query parameter (optional)
+    const userId = query.userId;
+    let jobIds: string[] | undefined;
+
+    // If userId is provided, call AI service to get job recommendations first
+    if (userId) {
+      try {
+        // Get k parameter from query, default to 5
+        const k = query.limit ? Math.min(query.limit, 50) : 5; // Limit k to max 50
+        
+        // Call AI service to get job recommendations
+        // Endpoint: /api/recommendations/{userId}?k=5
+        const aiUrl = `${aiConfig.AI_SERVICE_URL}/api/recommendations/${userId}?k=${k}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), aiConfig.AI_SERVICE_TIMEOUT);
+        
+        try {
+          const aiResponse = await fetch(aiUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            // Extract job IDs from AI response
+            // AI response format: { jobIds: string[] } or similar
+            if (aiData.jobIds && Array.isArray(aiData.jobIds)) {
+              jobIds = aiData.jobIds;
+            } else if (Array.isArray(aiData)) {
+              // If response is array of job IDs directly
+              jobIds = aiData;
+            }
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          throw fetchError;
+        }
+      } catch (aiError) {
+        // If AI service fails, log error but continue with normal query
+        console.warn('AI recommendation service failed, falling back to normal query:', aiError);
+        // Continue without jobIds - will use normal query
+      }
+    }
+
+    // Query database with job IDs from AI (if available) or use normal query
+    let result;
+    if (jobIds && jobIds.length > 0) {
+      // Query jobs by IDs from AI recommendations
+      const jobs = await service.getByIds(jobIds);
+      
+      // Apply pagination
+      const page = query.page || 1;
+      const limit = query.limit || 10;
+      const skip = (page - 1) * limit;
+      const paginatedJobs = jobs.slice(skip, skip + limit);
+      
+      result = {
+        data: paginatedJobs,
+        meta: {
+          total: jobs.length,
+          page,
+          limit,
+          totalPages: Math.ceil(jobs.length / limit)
+        }
+      };
+    } else {
+      // Normal query
+      result = await service.list({
+        page: query.page,
+        limit: query.limit,
+        search: query.search,
+        location: query.location,
+        industry: query.industry,
+        experienceLevel: query.experienceLevel,
+        type: query.type,
+        isActive: query.isActive,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder
+      });
+    }
     
     res.json({ 
       success: true,

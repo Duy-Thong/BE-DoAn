@@ -27,7 +27,6 @@ async function clearDatabase() {
   await prisma.savedJob.deleteMany({});
   await prisma.application.deleteMany({});
   await prisma.upload.deleteMany({});
-  await prisma.jobSkill.deleteMany({});
   await prisma.jobBenefit.deleteMany({});
   await prisma.jobRequirement.deleteMany({});
   await prisma.cVSkill.deleteMany({});
@@ -71,9 +70,7 @@ async function main() {
         address: '123 Nguyen Hue Street, District 1, Ho Chi Minh City',
         phone: '+84 28 1234 5678',
         email: 'contact@techcorp.vn',
-        isVerified: true,
-        isActive: true,
-        isEmailVerified: true
+        status: 'ACTIVE'
       }
     }),
     prisma.company.create({
@@ -87,9 +84,7 @@ async function main() {
         address: '456 Le Loi Boulevard, District 3, Ho Chi Minh City',
         phone: '+84 28 8765 4321',
         email: 'hello@startupxyz.com',
-        isVerified: false,
-        isActive: true,
-        isEmailVerified: false
+        status: 'REGISTERED'
       }
     }),
     prisma.company.create({
@@ -103,9 +98,7 @@ async function main() {
         address: '789 Dong Khoi Street, District 1, Ho Chi Minh City',
         phone: '+84 28 9999 8888',
         email: 'info@globalfinance.com',
-        isVerified: true,
-        isActive: true,
-        isEmailVerified: true
+        status: 'ACTIVE'
       }
     }),
     prisma.company.create({
@@ -119,9 +112,7 @@ async function main() {
         address: '321 Hai Ba Trung Street, District 3, Ho Chi Minh City',
         phone: '+84 28 7777 6666',
         email: 'careers@ecommercepro.vn',
-        isVerified: true,
-        isActive: true,
-        isEmailVerified: true
+        status: 'ACTIVE'
       }
     })
   ]);
@@ -141,8 +132,7 @@ async function main() {
         phoneNumber: '+84 901 234 567',
         dateOfBirth: new Date('1985-01-15'),
         gender: Gender.MALE,
-        nationality: 'Vietnamese',
-        isActive: true
+        status: 'ACTIVE'
       }
     }),
     // Recruiters
@@ -157,10 +147,7 @@ async function main() {
         phoneNumber: '+84 912 345 678',
         dateOfBirth: new Date('1990-03-20'),
         gender: Gender.FEMALE,
-        nationality: 'Vietnamese',
-        isActive: true,
-        companyId: companies[0].id, // TechCorp Vietnam
-        companyRole: CompanyRole.OWNER
+        status: 'ACTIVE'
       }
     }),
     prisma.user.upsert({
@@ -174,10 +161,7 @@ async function main() {
         phoneNumber: '+84 913 456 789',
         dateOfBirth: new Date('1987-08-12'),
         gender: Gender.MALE,
-        nationality: 'Vietnamese',
-        isActive: true,
-        companyId: companies[0].id, // TechCorp Vietnam
-        companyRole: CompanyRole.RECRUITER
+        status: 'ACTIVE'
       }
     }),
     // Candidates
@@ -192,8 +176,7 @@ async function main() {
         phoneNumber: '+84 934 567 890',
         dateOfBirth: new Date('1995-05-15'),
         gender: Gender.MALE,
-        nationality: 'Vietnamese',
-        isActive: true
+        status: 'ACTIVE'
       }
     }),
     prisma.user.upsert({
@@ -207,8 +190,7 @@ async function main() {
         phoneNumber: '+84 945 678 901',
         dateOfBirth: new Date('1992-11-30'),
         gender: Gender.FEMALE,
-        nationality: 'Vietnamese',
-        isActive: true
+        status: 'ACTIVE'
       }
     }),
     prisma.user.upsert({
@@ -222,16 +204,72 @@ async function main() {
         phoneNumber: '+84 948 901 234',
         dateOfBirth: new Date('1988-12-05'),
         gender: Gender.MALE,
-        nationality: 'Vietnamese',
-        isActive: true
+        status: 'ACTIVE'
       }
     })
   ]);
 
-  // 3. Company Members - Now handled directly in User model
-  console.log('👔 Company members are now part of User model...');
+  // 3. Create Company Members
+  console.log('👔 Creating company members...');
+  await Promise.all([
+    prisma.companyMember.create({
+      data: {
+        userId: users[1].id, // recruiter1@techcorp.vn
+        companyId: companies[0].id, // TechCorp Vietnam
+        companyRole: 'OWNER'
+      }
+    }),
+    prisma.companyMember.create({
+      data: {
+        userId: users[2].id, // recruiter2@techcorp.vn
+        companyId: companies[0].id, // TechCorp Vietnam
+        companyRole: 'RECRUITER'
+      }
+    })
+  ]);
 
-  // 4. Create Jobs
+  // 4. Create Salaries
+  console.log('💰 Creating salaries...');
+  const salaries = await Promise.all([
+    prisma.salary.create({
+      data: {
+        minAmount: 25000000,
+        maxAmount: 35000000,
+        currency: 'VND',
+        isNegotiable: false,
+        hideAmount: false
+      }
+    }),
+    prisma.salary.create({
+      data: {
+        minAmount: 20000000,
+        maxAmount: 30000000,
+        currency: 'VND',
+        isNegotiable: false,
+        hideAmount: false
+      }
+    }),
+    prisma.salary.create({
+      data: {
+        minAmount: 25000000,
+        maxAmount: 35000000,
+        currency: 'VND',
+        isNegotiable: true,
+        hideAmount: false
+      }
+    }),
+    prisma.salary.create({
+      data: {
+        minAmount: 30000000,
+        maxAmount: 40000000,
+        currency: 'VND',
+        isNegotiable: false,
+        hideAmount: false
+      }
+    })
+  ]);
+
+  // 5. Create Jobs
   console.log('💼 Creating jobs...');
   const jobs = await Promise.all([
     // TechCorp Vietnam Jobs
@@ -243,11 +281,14 @@ async function main() {
         type: JobType.FULL_TIME,
         industry: 'Technology',
         experienceLevel: ExperienceLevel.SENIOR,
-        salary: 30000000,
+        titleEmbedding: [],
+        descriptionEmbedding: [],
+        requirementEmbedding: [],
         urgent: false,
-        isActive: true,
+        status: 'ACTIVE',
         expiresAt: new Date('2024-12-31'),
-        companyId: companies[0].id
+        companyId: companies[0].id,
+        salaryId: salaries[0].id
       }
     }),
     prisma.job.create({
@@ -258,11 +299,14 @@ async function main() {
         type: JobType.FULL_TIME,
         industry: 'Technology',
         experienceLevel: ExperienceLevel.MID,
-        salary: 25000000,
+        titleEmbedding: [],
+        descriptionEmbedding: [],
+        requirementEmbedding: [],
         urgent: true,
-        isActive: true,
+        status: 'ACTIVE',
         expiresAt: new Date('2024-12-31'),
-        companyId: companies[0].id
+        companyId: companies[0].id,
+        salaryId: salaries[1].id
       }
     }),
     // StartupXYZ Jobs
@@ -274,11 +318,14 @@ async function main() {
         type: JobType.FULL_TIME,
         industry: 'Artificial Intelligence',
         experienceLevel: ExperienceLevel.MID,
-        salary: 28000000,
+        titleEmbedding: [],
+        descriptionEmbedding: [],
+        requirementEmbedding: [],
         urgent: false,
-        isActive: true,
+        status: 'ACTIVE',
         expiresAt: new Date('2024-12-31'),
-        companyId: companies[1].id
+        companyId: companies[1].id,
+        salaryId: salaries[2].id
       }
     }),
     // Global Finance Jobs
@@ -290,83 +337,14 @@ async function main() {
         type: JobType.CONTRACT,
         industry: 'Finance',
         experienceLevel: ExperienceLevel.SENIOR,
-        salary: 35000000,
+        titleEmbedding: [],
+        descriptionEmbedding: [],
+        requirementEmbedding: [],
         urgent: false,
-        isActive: true,
+        status: 'ACTIVE',
         expiresAt: new Date('2024-12-31'),
-        companyId: companies[2].id
-      }
-    })
-  ]);
-
-  // 5. Create Job Skills
-  console.log('🔧 Creating job skills...');
-  await Promise.all([
-    // Senior Frontend Developer skills
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'JavaScript',
-        isRequired: true,
-        jobId: jobs[0].id
-      }
-    }),
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'TypeScript',
-        isRequired: true,
-        jobId: jobs[0].id
-      }
-    }),
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'React',
-        isRequired: true,
-        jobId: jobs[0].id
-      }
-    }),
-    // Backend Developer skills
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'Node.js',
-        isRequired: true,
-        jobId: jobs[1].id
-      }
-    }),
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'PostgreSQL',
-        isRequired: true,
-        jobId: jobs[1].id
-      }
-    }),
-    // AI/ML Engineer skills
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'Python',
-        isRequired: true,
-        jobId: jobs[2].id
-      }
-    }),
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'Machine Learning',
-        isRequired: true,
-        jobId: jobs[2].id
-      }
-    }),
-    // DevOps Engineer skills
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'Docker',
-        isRequired: true,
-        jobId: jobs[3].id
-      }
-    }),
-    prisma.jobSkill.create({
-      data: {
-        skillName: 'AWS',
-        isRequired: true,
-        jobId: jobs[3].id
+        companyId: companies[2].id,
+        salaryId: salaries[3].id
       }
     })
   ]);
@@ -383,11 +361,13 @@ async function main() {
         phoneNumber: '+84 934 567 890',
         dateOfBirth: new Date('1995-05-15'),
         gender: Gender.MALE,
-        nationality: 'Vietnamese',
         address: '123 Le Loi Street, District 1, Ho Chi Minh City',
         currentPosition: 'Senior Frontend Developer at TechCorp',
         summary: 'Experienced frontend developer with 3+ years of experience in React and TypeScript. Passionate about creating user-friendly interfaces and optimizing web performance.',
         objective: 'Looking for challenging frontend development opportunities in innovative companies',
+        titleEmbedding: [],
+        experienceEmbedding: [],
+        targetEmbedding: [],
         userId: users[3].id
       }
     }),
@@ -400,11 +380,13 @@ async function main() {
         phoneNumber: '+84 945 678 901',
         dateOfBirth: new Date('1992-11-30'),
         gender: Gender.FEMALE,
-        nationality: 'Vietnamese',
         address: '456 Nguyen Trai Street, District 5, Ho Chi Minh City',
         currentPosition: 'Backend Developer at StartupXYZ',
         summary: 'Full-stack developer with expertise in Node.js and PostgreSQL. Strong background in building scalable APIs and microservices.',
         objective: 'Seeking backend development roles in growing companies with modern tech stacks',
+        titleEmbedding: [],
+        experienceEmbedding: [],
+        targetEmbedding: [],
         userId: users[4].id
       }
     }),
@@ -417,11 +399,13 @@ async function main() {
         phoneNumber: '+84 948 901 234',
         dateOfBirth: new Date('1988-12-05'),
         gender: Gender.MALE,
-        nationality: 'Vietnamese',
         address: '789 Dong Khoi Street, District 1, Ho Chi Minh City',
         currentPosition: 'Senior Full-stack Developer at E-Commerce Pro',
         summary: 'Senior full-stack developer with 7+ years of experience. Expert in both frontend and backend technologies with strong leadership skills.',
         objective: 'Looking for senior full-stack development opportunities and team leadership roles',
+        titleEmbedding: [],
+        experienceEmbedding: [],
+        targetEmbedding: [],
         userId: users[5].id
       }
     }),
@@ -435,11 +419,13 @@ async function main() {
         phoneNumber: '+84 934 567 890',
         dateOfBirth: new Date('1995-05-15'),
         gender: Gender.MALE,
-        nationality: 'Vietnamese',
         address: '123 Le Loi Street, District 1, Ho Chi Minh City',
         currentPosition: 'Mobile App Developer',
         summary: 'Mobile app developer with experience in React Native and Flutter. Passionate about cross-platform development.',
         objective: 'Seeking mobile development opportunities',
+        titleEmbedding: [],
+        experienceEmbedding: [],
+        targetEmbedding: [],
         userId: users[3].id
       }
     }),
@@ -452,11 +438,13 @@ async function main() {
         phoneNumber: '+84 945 678 901',
         dateOfBirth: new Date('1992-11-30'),
         gender: Gender.FEMALE,
-        nationality: 'Vietnamese',
         address: '456 Nguyen Trai Street, District 5, Ho Chi Minh City',
         currentPosition: 'DevOps Engineer',
         summary: 'DevOps engineer with expertise in AWS, Docker, and CI/CD pipelines. Strong background in infrastructure automation.',
         objective: 'Seeking DevOps and infrastructure roles',
+        titleEmbedding: [],
+        experienceEmbedding: [],
+        targetEmbedding: [],
         userId: users[4].id
       }
     })

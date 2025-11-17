@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE "public"."Company" ALTER COLUMN "status" SET DEFAULT 'REGISTERED',
+ALTER COLUMN "status" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "public"."Job" ALTER COLUMN "status" SET DEFAULT 'ACTIVE',
+ALTER COLUMN "status" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "public"."User" ALTER COLUMN "status" SET DEFAULT 'ACTIVE',
+ALTER COLUMN "status" SET DATA TYPE TEXT;

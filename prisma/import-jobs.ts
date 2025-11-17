@@ -75,10 +75,22 @@ function mapExperienceLevel(level: string, years: string): ExperienceLevel | nul
   return null;
 }
 
-// Parse salary from string
-function parseSalary(salary: string): number | null {
-  if (!salary || salary.trim() === '' || salary.toLowerCase().includes('thỏa thuận') || salary.toLowerCase().includes('negotiable')) {
+// Parse salary from string and return Salary object
+function parseSalary(salary: string): { minAmount: number; maxAmount: number | null; isNegotiable: boolean; hideAmount: boolean } | null {
+  if (!salary || salary.trim() === '') {
     return null;
+  }
+
+  const salaryLower = salary.toLowerCase().trim();
+
+  // Check if negotiable
+  if (salaryLower.includes('thỏa thuận') || salaryLower.includes('negotiable')) {
+    return {
+      minAmount: 0,
+      maxAmount: null,
+      isNegotiable: true,
+      hideAmount: false,
+    };
   }
 
   // Extract numbers from salary string like "5,000,000 - 10,000,000" or "5.000.000 - 10.000.000"
@@ -87,24 +99,30 @@ function parseSalary(salary: string): number | null {
     return null;
   }
 
-  // Get the first number (minimum salary) or average if range
+  // Get the first number (minimum salary)
   const firstNumber = numbers[0].replace(/,/g, '').replace(/\./g, '');
-  const num = parseFloat(firstNumber);
+  const minAmount = parseFloat(firstNumber);
 
-  if (isNaN(num)) {
+  if (isNaN(minAmount)) {
     return null;
   }
 
-  // If there's a second number, calculate average
+  // If there's a second number, use it as maxAmount
+  let maxAmount: number | null = null;
   if (numbers.length > 1) {
     const secondNumber = numbers[1].replace(/,/g, '').replace(/\./g, '');
-    const num2 = parseFloat(secondNumber);
-    if (!isNaN(num2)) {
-      return Math.round((num + num2) / 2);
+    const max = parseFloat(secondNumber);
+    if (!isNaN(max)) {
+      maxAmount = max;
     }
   }
 
-  return Math.round(num);
+  return {
+    minAmount: Math.round(minAmount),
+    maxAmount: maxAmount ? Math.round(maxAmount) : null,
+    isNegotiable: false,
+    hideAmount: false,
+  };
 }
 
 // Parse date from string
@@ -133,13 +151,59 @@ function parseDate(dateStr: string): Date | null {
   }
 }
 
-// Extract embedding array from CSV row
-function extractEmbedding(row: any): number[] {
+// Extract title embedding array from CSV row
+function extractTitleEmbedding(row: any): number[] {
   const embedding: number[] = [];
   let i = 0;
   
   while (true) {
-    const key = `emb_${i}`;
+    const key = `title_emb_${i}`;
+    if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+      const value = parseFloat(row[key]);
+      if (!isNaN(value)) {
+        embedding.push(value);
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+    i++;
+  }
+
+  return embedding;
+}
+
+// Extract description embedding array from CSV row
+function extractDescriptionEmbedding(row: any): number[] {
+  const embedding: number[] = [];
+  let i = 0;
+  
+  while (true) {
+    const key = `desc_emb_${i}`;
+    if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+      const value = parseFloat(row[key]);
+      if (!isNaN(value)) {
+        embedding.push(value);
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+    i++;
+  }
+
+  return embedding;
+}
+
+// Extract requirement embedding array from CSV row
+function extractRequirementEmbedding(row: any): number[] {
+  const embedding: number[] = [];
+  let i = 0;
+  
+  while (true) {
+    const key = `req_emb_${i}`;
     if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
       const value = parseFloat(row[key]);
       if (!isNaN(value)) {
@@ -405,7 +469,11 @@ async function importJobs() {
             continue;
           }
 
-          const embedding = extractEmbedding(row);
+          // Extract embeddings
+          const titleEmbedding = extractTitleEmbedding(row);
+          const descriptionEmbedding = extractDescriptionEmbedding(row);
+          const requirementEmbedding = extractRequirementEmbedding(row);
+          
           const expiresAt = parseDate(row['Submission Deadline'] || row['SubmissionDeadline'] || '');
           
           // Parse requirements and benefits
@@ -418,7 +486,10 @@ async function importJobs() {
           const applicationCountText = row['Number Cadidate'] || row['Number Candidate'] || row['NumberCadidate'] || row['NumberCandidate'] || '0';
           const applicationCount = parseInt(applicationCountText.trim(), 10) || 0;
 
-          const jobData = {
+          // Parse salary data (will create Salary in transaction)
+          const salaryData = parseSalary(row['Salary'] || '');
+
+          const jobData: any = {
             id: jobId, // Use job_id from CSV as ID
             title: jobTitle,
             description: cleanText(row['Job Description'] || row['JobDescription'] || ''),
@@ -429,10 +500,11 @@ async function importJobs() {
               row['Years of Experience'] || row['YearsOfExperience'] || ''
             ),
             type: mapJobType(row['Job Type'] || row['JobType'] || ''),
-            salary: parseSalary(row['Salary'] || ''),
-            embedding: embedding.length > 0 ? embedding : [],
+            titleEmbedding: titleEmbedding.length > 0 ? titleEmbedding : [],
+            descriptionEmbedding: descriptionEmbedding.length > 0 ? descriptionEmbedding : [],
+            requirementEmbedding: requirementEmbedding.length > 0 ? requirementEmbedding : [],
             urgent: false,
-            isActive: true,
+            status: 'ACTIVE', // Use string status instead of isActive
             expiresAt: expiresAt,
             applicationCount: applicationCount,
             companyId: companyId,
@@ -449,6 +521,19 @@ async function importJobs() {
               })),
             },
           };
+
+          // Add salary relation if salary data exists
+          if (salaryData) {
+            jobData.salary = {
+              create: {
+                minAmount: salaryData.minAmount,
+                maxAmount: salaryData.maxAmount,
+                currency: 'VND',
+                isNegotiable: salaryData.isNegotiable,
+                hideAmount: salaryData.hideAmount,
+              },
+            };
+          }
 
           jobsToCreate.push(jobData);
         } catch (error: any) {

@@ -164,9 +164,7 @@ async function importCompanies() {
             companySize: mapCompanySize(row['Company Size']),
             address: cleanAddress(row['Company Address']),
             industry: cleanIndustry(row['Industry']),
-            isActive: true,
-            isVerified: false,
-            isEmailVerified: false,
+            status: 'REGISTERED', // Default status for imported companies
           };
 
           await prisma.company.create({
